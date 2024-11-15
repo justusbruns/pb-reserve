@@ -136,7 +136,7 @@
   }
 
   onMount(async () => {
-    mapboxgl.accessToken = 'pk.eyJ1IjoianVzdHVzYnJ1bnMiLCJhIjoiY2l2MHQ3cHI4MDVjZDJ0bDFwcDBrMHZ1dCJ9.icD7LzFLwqnEqOAu34E7xw';
+    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
     const originResponse = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(originAddress)}.json?access_token=${mapboxgl.accessToken}`);
     const originData = await originResponse.json();
     if (originData.features.length > 0) {
