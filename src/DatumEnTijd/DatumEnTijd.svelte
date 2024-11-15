@@ -1,11 +1,16 @@
-<script>
+<script lang="ts"></script>
   import { onMount } from "svelte";
   import mapboxgl from "mapbox-gl";
-  import Airtable from 'airtable';
+  import { eventService } from './services/airtable/eventService';
+  import { locationService } from './services/airtable/locationService';
+  import { organizationService } from './services/airtable/organizationService';
+  import { personService } from './services/airtable/personService';
+  import type { EventFields } from './types/Event';
+  import { writable } from 'svelte/store';
 
   // Configure Airtable with Personal Access Token
   const base = new Airtable({
-    apiKey: import.meta.env.VITE_AIRTABLE_TOKEN, // Updated env variable name
+    apiKey: import.meta.env.VITE_AIRTABLE_PAT, // Updated env variable name
     endpointUrl: 'https://api.airtable.com' // Explicit endpoint
   }).base('apphYtwSYRt7UDukL');
 
@@ -38,6 +43,12 @@
   let selectedLanguages = [];
   const languagePrice = 125;
   let primaryLanguage = "Dutch"; // Default to Dutch
+  let isSubmitting = false;
+  let submitError = '';
+  let companyName = '';
+  let contactName = '';
+  let email = '';
+  let vatNumber = '';
 
   const originAddress = "Gedempt Hamerkanaal 111, 1021KP Amsterdam, The Netherlands";
   let originCoordinates = [];
@@ -276,7 +287,6 @@
     }
   }
   
-  import { writable } from 'svelte/store';
   let isDefinite = writable(false);
 
   function toggleInvoiceFields(selectedOption) {
@@ -315,7 +325,6 @@
   }
 
   // Add to existing script section
-  let email = '';
   let emailError = '';
   
   function validateEmail(email) {
@@ -333,90 +342,60 @@
   }
 
   // Submit handler
-  async function handleSubmit(makeDefinitive = false) {
+  async function handleSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    const makeDefinitive = (e.submitter as HTMLButtonElement).id === 'submit-definitive';
+    
     try {
+      isSubmitting = true;
+      submitError = '';
+
       // 1. Create Location
-      const [locationRecord] = await base('Locations').create([{
-        fields: {
-          'Location name': locationName,
-          'Address line 1': deliveryAddress,
-          'Country': 'Netherlands'
-        }
-      }]);
+      const location = await locationService.create({
+        'Location name': locationName,
+        'Address line 1': deliveryAddress,
+        'Country': 'Netherlands'
+      });
 
       // 2. Create Organization
-      const [organizationRecord] = await base('Organizations').create([{
-        fields: {
-          'Name Organization': companyName,
-          'Address line 1': billingAddress,
-          'Country': 'Netherlands'
-        }
-      }]);
+      const organization = await organizationService.create({
+        'Name Organization': companyName,
+        'VAT NR': vatNumber,
+        'Address line 1': deliveryAddress,
+        'Country': 'Netherlands'
+      });
 
       // 3. Create Contact Person
-      const [personRecord] = await base('People').create([{
-        fields: {
-          'Name': contactName,
-          'Type of person': 'Customer employee',
-          'Organizations': [organizationRecord.id]
-        }
-      }]);
+      const person = await personService.create({
+        'Name': contactName,
+        'Type of person': 'Customer employee',
+        'Organizations': [organization.id]
+      });
 
-      // 4. Create Reservations
-      const reservationPromises = [
-        // Default reservations
-        {type: 'Poem Booth 1'},
-        {type: 'Transport'},
-        // Optional reservations
-        printOptionSelected && {type: 'Printer'},
-        themaAdded && {type: 'Theme'},
-        brandingAdded && {type: 'Branding'}
-      ]
-      .filter(Boolean)
-      .map(reservation => 
-        base('Reservations').create([{
-          fields: {
-            'Order': reservation.type
-          }
-        }])
-      );
+      // 4. Create Event
+      const eventData: Partial<EventFields> = {
+        'Event name': eventName,
+        'Start at': `${startDate}T${startTime}`,
+        'Ends at': `${endDate}T${endTime}`,
+        'Event created by': 'Online',
+        'Contact person': [person.id],
+        'Location': [location.id],
+        'Reserved by': [organization.id],
+        'Status': 'concept',
+        'Payment status': makeDefinitive ? 'Invoice requested' : 'Proposal requested',
+        'Total amount': totalPrice
+      };
 
-      const reservationRecords = await Promise.all(reservationPromises);
+      const event = await eventService.create(eventData);
 
-      // 5. Create Event
-      const [eventRecord] = await base('Events').create([{
-        fields: {
-          'Event name': eventName,
-          'Start at': `${startDate}T${startTime}`,
-          'Ends at': `${endDate}T${endTime}`,
-          'Event created by': 'Online',
-          'Contact person': [personRecord.id],
-          'Location': [locationRecord.id],
-          'Reserved by': [organizationRecord.id],
-          'Reservations': reservationRecords.map(r => r[0].id),
-          'Status': 'concept',
-          'Payment status': makeDefinitive ? 'Invoice requested' : 'Proposal requested'
-        }
-      }]);
-
-      return eventRecord;
+      // Success - redirect or show confirmation
+      window.location.href = '/success';
 
     } catch (error) {
       console.error('Submission failed:', error);
-      throw error;
-    }
-  }
-
-  // Form submit handler
-  async function onSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    const makeDefinitive = e.submitter?.id === 'submit-definitive';
-    
-    try {
-      const result = await handleSubmit(makeDefinitive);
-      // Handle success - redirect or show confirmation
-    } catch (error) {
-      // Handle error - show error message
+      submitError = 'Er is iets misgegaan bij het versturen. Probeer het opnieuw.';
+    } finally {
+      isSubmitting = false;
     }
   }
 </script>
@@ -839,7 +818,7 @@
 </div>
 
 <div class="datum-en-tijd">
-  <form on:submit|preventDefault={onSubmit}>
+  <form on:submit={handleSubmit}>
     <div class="frame">
       <h1 class="h1">Stuur je reserving in</h1>
     </div>
@@ -963,8 +942,27 @@
         </div>
     </div>
 
-    <button type="submit" class="button" id="submit-definitive">Stuur mijn reserving in</button>
-    <button type="submit" class="button" id="submit-info">Vraag meer informatie op</button>
+    {#if submitError}
+      <div class="error-message">{submitError}</div>
+    {/if}
+
+    <button 
+      type="submit" 
+      class="button" 
+      id="submit-definitive"
+      disabled={isSubmitting}
+    >
+      {isSubmitting ? 'Versturen...' : 'Stuur mijn reserving in'}
+    </button>
+    
+    <button 
+      type="submit" 
+      class="button" 
+      id="submit-info"
+      disabled={isSubmitting}
+    >
+      {isSubmitting ? 'Versturen...' : 'Vraag meer informatie op'}
+    </button>
 </form>
 </div>
 
