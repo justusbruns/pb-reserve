@@ -1,4 +1,4 @@
-<script lang="ts"></script>
+<script lang="ts">
   import { onMount } from "svelte";
   import mapboxgl from "mapbox-gl";
   import { eventService } from './services/airtable/eventService';
@@ -7,18 +7,6 @@
   import { personService } from './services/airtable/personService';
   import type { EventFields } from './types/Event';
   import { writable } from 'svelte/store';
-
-  // Configure Airtable with Personal Access Token
-  const base = new Airtable({
-    apiKey: import.meta.env.VITE_AIRTABLE_PAT, // Updated env variable name
-    endpointUrl: 'https://api.airtable.com' // Explicit endpoint
-  }).base('apphYtwSYRt7UDukL');
-
-  // Interfaces
-  interface AirtableRecord {
-    id: string;
-    fields: Record<string, any>;
-  }
 
   let className = "";
   let startDate = "";
