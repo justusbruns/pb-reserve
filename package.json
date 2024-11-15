@@ -1,28 +1,26 @@
 {
   "name": "vite-svelte-starter",
   "version": "0.1.0",
-  "description": "",
-  "keywords": [],
+  "type": "module",
+  "private": true,
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "2.4.0",
-    "@tsconfig/svelte": "^5.0.0",
-    "sass": "^1.72.0",
-    "svelte": "^4.2.3",
-    "svelte-preprocess": "^5.0.0",
-    "typescript": "^5.0.0",
+    "@tsconfig/svelte": "5.0.0",
+    "sass": "1.72.0",
+    "svelte": "3.55.1",
+    "svelte-preprocess": "5.0.0",
+    "typescript": "5.8.0-dev.20241115",
     "vite": "4.4.9"
+  },
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "flowbite-svelte": "0.47.3",
+    "mapbox-gl": "3.7.0",
+    "svelte-google-maps-api": "0.0.10"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
-  },
-  "type": "module",
-  "private": true,
-  "dependencies": {
-    "flowbite-svelte": "^0.47.3",
-    "mapbox-gl": "^3.7.0",
-    "svelte-google-maps-api": "^0.0.10",
-    "airtable": "^0.12.0"
   }
 }
