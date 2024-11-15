@@ -87,7 +87,7 @@
         totalPrice = 950 + 750 + (diffDays - 2) * 100;
       }
 
-      // Removed console.log for production TEST TEST TEST
+      // Removed console.log for production TEST TEST TEST TEST
     }
   }
 
