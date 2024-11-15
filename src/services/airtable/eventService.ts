@@ -3,8 +3,7 @@ import type { EventFields } from '../../types/Event';
 
 export const eventService = {
   create: async (fields: Partial<EventFields>) => {
-    return await base('Events').create([{ fields }]);
+    const [record] = await base('Events').create([{ fields }]);
+    return record;
   }
 };
-
-export * from './eventService';
