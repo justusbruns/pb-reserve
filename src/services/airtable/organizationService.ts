@@ -5,3 +5,5 @@ export const organizationService = {
     return await base('Organizations').create([{ fields }]);
   }
 };
+
+export * from './organizationService';

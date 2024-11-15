@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import mapboxgl from "mapbox-gl";
-  import { eventService } from '../../services/airtable/eventService';
-  import { locationService } from '../../services/airtable/locationService';
-  import { organizationService } from '../../services/airtable/organizationService';
-  import { personService } from '../../services/airtable/personService';
+  import { 
+    eventService, 
+    locationService, 
+    organizationService, 
+    personService 
+  } from '../services/airtable';
   import type { EventFields } from '../../types/Event';
   import { writable } from 'svelte/store';
 

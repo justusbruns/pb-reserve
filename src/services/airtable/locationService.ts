@@ -5,3 +5,5 @@ export const locationService = {
     return await base('Locations').create([{ fields }]);
   }
 };
+
+export * from './locationService';

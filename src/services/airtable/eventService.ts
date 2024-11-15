@@ -6,3 +6,5 @@ export const eventService = {
     return await base('Events').create([{ fields }]);
   }
 };
+
+export * from './eventService';
