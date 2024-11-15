@@ -1,6 +1,19 @@
 <script>
   import { onMount } from "svelte";
   import mapboxgl from "mapbox-gl";
+  import Airtable from 'airtable';
+
+  // Configure Airtable with Personal Access Token
+  const base = new Airtable({
+    apiKey: import.meta.env.VITE_AIRTABLE_TOKEN, // Updated env variable name
+    endpointUrl: 'https://api.airtable.com' // Explicit endpoint
+  }).base('apphYtwSYRt7UDukL');
+
+  // Interfaces
+  interface AirtableRecord {
+    id: string;
+    fields: Record<string, any>;
+  }
 
   let className = "";
   let startDate = "";
@@ -87,7 +100,7 @@
         totalPrice = 950 + 750 + (diffDays - 2) * 100;
       }
 
-      // Removed console.log for production TEST TEST TEST TEST
+      // Removed console.log for production
     }
   }
 
@@ -317,6 +330,94 @@
       } else {
           emailError = '';
       }
+  }
+
+  // Submit handler
+  async function handleSubmit(makeDefinitive = false) {
+    try {
+      // 1. Create Location
+      const [locationRecord] = await base('Locations').create([{
+        fields: {
+          'Location name': locationName,
+          'Address line 1': deliveryAddress,
+          'Country': 'Netherlands'
+        }
+      }]);
+
+      // 2. Create Organization
+      const [organizationRecord] = await base('Organizations').create([{
+        fields: {
+          'Name Organization': companyName,
+          'Address line 1': billingAddress,
+          'Country': 'Netherlands'
+        }
+      }]);
+
+      // 3. Create Contact Person
+      const [personRecord] = await base('People').create([{
+        fields: {
+          'Name': contactName,
+          'Type of person': 'Customer employee',
+          'Organizations': [organizationRecord.id]
+        }
+      }]);
+
+      // 4. Create Reservations
+      const reservationPromises = [
+        // Default reservations
+        {type: 'Poem Booth 1'},
+        {type: 'Transport'},
+        // Optional reservations
+        printOptionSelected && {type: 'Printer'},
+        themaAdded && {type: 'Theme'},
+        brandingAdded && {type: 'Branding'}
+      ]
+      .filter(Boolean)
+      .map(reservation => 
+        base('Reservations').create([{
+          fields: {
+            'Order': reservation.type
+          }
+        }])
+      );
+
+      const reservationRecords = await Promise.all(reservationPromises);
+
+      // 5. Create Event
+      const [eventRecord] = await base('Events').create([{
+        fields: {
+          'Event name': eventName,
+          'Start at': `${startDate}T${startTime}`,
+          'Ends at': `${endDate}T${endTime}`,
+          'Event created by': 'Online',
+          'Contact person': [personRecord.id],
+          'Location': [locationRecord.id],
+          'Reserved by': [organizationRecord.id],
+          'Reservations': reservationRecords.map(r => r[0].id),
+          'Status': 'concept',
+          'Payment status': makeDefinitive ? 'Invoice requested' : 'Proposal requested'
+        }
+      }]);
+
+      return eventRecord;
+
+    } catch (error) {
+      console.error('Submission failed:', error);
+      throw error;
+    }
+  }
+
+  // Form submit handler
+  async function onSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    const makeDefinitive = e.submitter?.id === 'submit-definitive';
+    
+    try {
+      const result = await handleSubmit(makeDefinitive);
+      // Handle success - redirect or show confirmation
+    } catch (error) {
+      // Handle error - show error message
+    }
   }
 </script>
 
@@ -738,7 +839,7 @@
 </div>
 
 <div class="datum-en-tijd">
-  <form on:submit|preventDefault>
+  <form on:submit|preventDefault={onSubmit}>
     <div class="frame">
       <h1 class="h1">Stuur je reserving in</h1>
     </div>
@@ -862,7 +963,8 @@
         </div>
     </div>
 
-    <button type="submit" class="button">Stuur mijn reserving in</button>
+    <button type="submit" class="button" id="submit-definitive">Stuur mijn reserving in</button>
+    <button type="submit" class="button" id="submit-info">Vraag meer informatie op</button>
 </form>
 </div>
 
