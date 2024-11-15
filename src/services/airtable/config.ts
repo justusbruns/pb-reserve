@@ -1,8 +1,5 @@
 import Airtable from 'airtable';
 
-Airtable.configure({
+export const base = new Airtable({
   apiKey: import.meta.env.VITE_AIRTABLE_PAT,
-  endpointUrl: 'https://api.airtable.com',
-});
-
-export const base = Airtable.base('apphYtwSYRt7UDukL');
+}).base('apphYtwSYRt7UDukL');

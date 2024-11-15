@@ -25,6 +25,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "airtable": "^0.12.2",
     "flowbite-svelte": "^0.47.3",
     "mapbox-gl": "^3.7.0",
     "svelte-google-maps-api": "^0.0.10"
