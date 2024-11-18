@@ -5,7 +5,7 @@
   "private": true,
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "2.4.0",
-    "@tsconfig/svelte": "5.0.0",
+    "@tsconfig/svelte": "4.0.1",
     "sass": "1.72.0",
     "svelte": "3.55.1",
     "svelte-preprocess": "5.0.0",
@@ -18,8 +18,8 @@
     "mapbox-gl": "3.7.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "tsc --project tsconfig.override.json && vite",
+    "build": "tsc --project tsconfig.override.json && vite build",
     "preview": "vite preview"
   }
 }

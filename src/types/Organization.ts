@@ -1,4 +1,4 @@
-imimimport type { AirtableResponse } from './base';
+import type { AirtableResponse } from './base';
 
 export type OrganizationFields = {
   'Name Organization': string;
