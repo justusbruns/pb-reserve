@@ -6,8 +6,8 @@
     locationService, 
     organizationService, 
     personService 
-  } from '../services/airtable';
-  import type { EventFields } from '../../types/Event';
+  } from 'services/airtable';
+  import type { EventFields } from 'types/Event';
   import { writable } from 'svelte/store';
 
   let className = "";
