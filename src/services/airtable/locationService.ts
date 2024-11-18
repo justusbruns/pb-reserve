@@ -1,19 +1,10 @@
 import { base } from './config';
-
-interface LocationFields {
-  'Location name': string;
-  'Address line 1': string;
-  'Address line 2'?: string;
-  'Postal code'?: string;
-  'City'?: string;
-  'Country': string;
-}
+import type { LocationFields } from '../../types/Location';
 
 export const locationService = {
   create: async (fields: Partial<LocationFields>) => {
     const [record] = await base('Locations').create([{ fields }]);
     return record;
-  }
+  },
+  // Add other methods as needed
 };
-
-// Remove redundant export

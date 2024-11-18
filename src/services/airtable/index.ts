@@ -1,11 +1,4 @@
-import { eventService } from './eventService';
-import { locationService } from './locationService';
-import { organizationService } from './organizationService';
-import { personService } from './personService';
-
-export {
-  eventService,
-  locationService,
-  organizationService,
-  personService
-};
+export { eventService } from './eventService';
+export { locationService } from './locationService';
+export { organizationService } from './organizationService';
+export { personService } from './personService';
