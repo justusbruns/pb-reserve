@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/en", "destination": "/" },
+    { "source": "/en/(.*)", "destination": "/$1" }
+  ],
+  "cleanUrls": true
+}
