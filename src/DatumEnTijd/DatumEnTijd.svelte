@@ -713,10 +713,16 @@
   }
 
   function removeLanguage(lang: string) {
-    if (lang === primaryLanguage) {
-      return; // Don't allow removal of primary language
+    if (selectedLanguages.length === 1) {
+      return; // Don't allow removal if it's the only language
     }
+    
     selectedLanguages = selectedLanguages.filter(l => l !== lang);
+    
+    // If we removed the primary language, set the first remaining language as primary
+    if (lang === primaryLanguage && selectedLanguages.length > 0) {
+      primaryLanguage = selectedLanguages[0];
+    }
     
     // Update extras list for pricing
     if (selectedLanguages.length > 1) {
