@@ -1,0 +1,60 @@
+Category,Field Name,Type,Required,Default Value,Description
+
+Date and Time,startDate,date,yes,today + 7 days,Event start date
+Date and Time,endDate,date,yes,same as start date,Event end date
+Date and Time,startTime,time,yes,09:00,Event start time
+Date and Time,endTime,time,yes,17:00,Event end time
+Date and Time,eventDays,number,yes,calculated,Number of event days (calculated from dates)
+
+Event Details,eventName,text,yes,empty,Event name
+Event Details,reservationType,select,yes,info,Type of reservation
+Event Details,isDefinitive,boolean,no,false,Whether the reservation is definitive
+Event Details,notes,text,no,empty,Additional notes about the event
+Event Details,outsideInside,select,no,empty,Whether event is inside or outside (🏠 Inside/🏕️ Outside)
+
+Company Information,companyName,text,yes,empty,Company name
+Company Information,contactName,text,yes,empty,Contact person name
+Company Information,email,text,yes,empty,Contact email address
+Company Information,vatNumber,text,no,empty,VAT number
+Company Information,poNumber,text,no,empty,Purchase order number
+
+Location,deliveryAddress,text,yes,empty,Delivery address for the booth
+Location,originAddress,text,no,"Gedempt Hamerkanaal 111, 1021KP Amsterdam, The Netherlands",Origin address
+Location,calculatedDistance,number,yes,calculated,Distance in km from origin to delivery address
+Location,totalDistance,number,yes,calculated,Total distance including return trips
+
+Network Settings,networkType,select,no,empty,Type of network (Mobile Router/Ethernet/Local Wifi)
+Network Settings,wifiName,text,no,empty,Wifi network name
+Network Settings,wifiPassword,text,no,empty,Wifi network password
+
+Language Options,primaryLanguage,select,yes,Dutch,Primary language selection
+Language Options,selectedLanguages,multi-select,no,empty,Additional languages selection
+Language Options,languagePrice,number,yes,125,Price per additional language
+
+Billing Information,billingAddressInput,text,yes,empty,Billing address
+Billing Information,hasDifferentInvoiceContact,boolean,no,false,Flag for different invoice contact
+Billing Information,invoiceContactName,text,conditional,empty,Invoice contact name (if different)
+Billing Information,invoiceContactEmail,text,conditional,empty,Invoice contact email (if different)
+Billing Information,invoiceContactPhone,text,conditional,empty,Invoice contact phone (if different)
+
+Add-ons,getRoastedAdded,boolean,no,false,Get Roasted Edition selected
+Add-ons,brandingAdded,boolean,no,false,Branding option selected
+Add-ons,themaAdded,boolean,no,false,Theme option selected
+Add-ons,printOptionSelected,boolean,no,false,Print option selected
+Add-ons,extrasList,array,no,empty,List of all selected extras
+
+Price Calculations,baseRental,number,yes,950,Base rental price per day
+Price Calculations,transportFee,number,yes,calculated,€1 per km driven (distance × 2 for single day × 4 for multiple days)
+Price Calculations,extrasPrice,number,yes,calculated,Total price of all selected extras
+Price Calculations,totalPrice,number,yes,calculated,Sum of all selected options and base rental
+Price Calculations,vatAmount,number,yes,calculated,VAT amount based on total price
+Price Calculations,totalWithVat,number,yes,calculated,Total price including VAT
+
+Discounts,couponCode,text,no,empty,Discount coupon code
+Discounts,couponDiscount,number,no,0,Discount amount from coupon code
+Discounts,eventSpecialistDiscount,number,no,100,Event Specialist discount amount
+Discounts,eventPartnerDiscount,number,no,750,Event Partner discount (only with Theme and Branding)
+
+Status,isSubmitting,boolean,no,false,Form submission status
+Status,submitError,text,no,empty,Error message during submission
+Status,submitSuccess,boolean,no,false,Submission success status

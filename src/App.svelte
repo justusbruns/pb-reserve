@@ -1,14 +1,16 @@
+<script>
+  import DatumEnTijd from "./DatumEnTijd/DatumEnTijd.svelte";
+  import EnvTest from './components/EnvTest.svelte';
+  import "./vars.css";
+  import "./styles.css";
+
+  export let translations;
+</script>
 
 <div>
-  <DatumEnTijd />
+  <DatumEnTijd {translations} />
+  <EnvTest />
 </div>
-
-<script>
-import DatumEnTijd from "./DatumEnTijd/DatumEnTijd.svelte";
-import "./vars.css";
-import "./styles.css";
-</script>
 
 <style>
 </style>
-
