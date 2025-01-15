@@ -2,6 +2,14 @@
   import { onMount, onDestroy } from "svelte";
   import mapboxgl from "mapbox-gl";
   import { fade } from 'svelte/transition';
+  import dateImage from '../images/Date.png';
+  import locationImage from '../images/Location.png';
+  import languageImage from '../images/Taal.png';
+  import printImage from '../images/Print.jpg';
+  import brandingImage from '../images/Branding.png';
+  import themaImage from '../images/Thema.png';
+  import rbImage from '../images/RB.png';
+  import couponImage from '../images/Coupon.png';
   import { 
     eventService, 
     organizationService, 
@@ -1005,7 +1013,7 @@
   <div class="features">
     <!-- Date Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Date.png');"></div>
+      <div class="image" style="background-image: url('{dateImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.dateTime.startDate}</span>
@@ -1047,7 +1055,7 @@
 
     <!-- Location Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Location.png');"></div>
+      <div class="image" style="background-image: url('{locationImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.transport.deliveryAddress}</span>
@@ -1090,7 +1098,7 @@
 
     <!-- Language Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Taal.png');"></div>
+      <div class="image" style="background-image: url('{languageImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.extras.language.title}</span>
@@ -1126,7 +1134,7 @@
 
     <!-- Print Option Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Print.jpg');"></div>
+      <div class="image" style="background-image: url('{printImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.extras.printOption.title}</span>
@@ -1143,7 +1151,7 @@
 
     <!-- Branding Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Branding.png');"></div>
+      <div class="image" style="background-image: url('{brandingImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.extras.branding.title}</span>
@@ -1160,7 +1168,7 @@
 
     <!-- Thema Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Thema.png');"></div>
+      <div class="image" style="background-image: url('{themaImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.extras.theme.title}</span>
@@ -1177,7 +1185,7 @@
 
     <!-- Get Roasted Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/RB.png');"></div>
+      <div class="image" style="background-image: url('{rbImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.extras.getRoasted.title}</span>
@@ -1194,7 +1202,7 @@
 
     <!-- Coupon Card -->
     <div class="feature-2">
-      <div class="image" style="background-image: url('/src/images/Coupon.png');"></div>
+      <div class="image" style="background-image: url('{couponImage}');"></div>
       <div class="description">
         <div class="description-text-2">
           <span class="description-text-span">{t.coupon.title}</span>
