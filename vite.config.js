@@ -1,14 +1,9 @@
-import { defineConfig } from 'vite';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vite'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
-  plugins: [
-    svelte(),
-    tsconfigPaths()
-  ],
+  plugins: [svelte()],
   server: {
-    host: '0.0.0.0', // Listen on all network interfaces
-    port: 5173  // Default Vite port
+    port: 5173
   }
-});
+})
