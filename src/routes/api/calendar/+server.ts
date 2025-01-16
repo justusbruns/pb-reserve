@@ -1,12 +1,11 @@
-import type { APIRoute } from 'astro';
-import { calendarService } from '../../services/calendarService';
+import { calendarService } from '$lib/services/calendarService';
+import type { RequestHandler } from '@sveltejs/kit';
 
-export const get: APIRoute = async ({ request }) => {
+export const GET: RequestHandler = async () => {
     try {
         const calendar = await calendarService.generateCalendar();
         
         return new Response(calendar.toString(), {
-            status: 200,
             headers: {
                 'Content-Type': 'text/calendar; charset=utf-8',
                 'Content-Disposition': 'attachment; filename="pb-reserve-events.ics"',
