@@ -6,12 +6,15 @@ const TABLE_NAME = 'Events';
 export const calendarService = {
     async getReservedEvents() {
         try {
+            console.log('Fetching reserved events...');
             const records = await base(TABLE_NAME)
                 .select({
                     filterByFormula: "{Status} = 'reserved'",
                     fields: ['Event name', 'Starts at', 'Stops at', 'Location', 'Notes']
                 })
                 .all();
+
+            console.log('Found records:', records);
 
             return records.map(record => ({
                 name: record.fields['Event name'] as string,
@@ -28,10 +31,16 @@ export const calendarService = {
 
     async generateCalendar() {
         const events = await this.getReservedEvents();
+        console.log('Generating calendar with events:', events);
         
         const calendar = ical({
             name: 'PB Reserve Events',
-            timezone: 'Europe/Amsterdam'
+            timezone: 'Europe/Amsterdam',
+            prodId: {
+                company: 'PB Reserve',
+                product: 'Events Calendar',
+                language: 'EN'
+            }
         });
 
         events.forEach(event => {
@@ -40,7 +49,8 @@ export const calendarService = {
                 end: event.end,
                 summary: event.name,
                 location: event.location,
-                description: event.description
+                description: event.description || '',
+                url: 'https://pb-reserve.vercel.app'
             });
         });
 
