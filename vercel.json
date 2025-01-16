@@ -1,7 +1,9 @@
 {
   "rewrites": [
     { "source": "/en", "destination": "/" },
-    { "source": "/en/(.*)", "destination": "/$1" }
+    { "source": "/en/(.*)", "destination": "/$1" },
+    { "source": "/chauffeur", "destination": "/" },
+    { "source": "/en/chauffeur", "destination": "/" }
   ],
   "cleanUrls": true
 }

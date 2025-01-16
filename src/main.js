@@ -1,5 +1,5 @@
-import App from './App.svelte';
-import { translations } from './translations/index';
+import App from './App.svelte'
+import translations from './translations'
 
 // Function to determine the current language based on the URL
 function getCurrentLanguage() {
@@ -17,6 +17,6 @@ const app = new App({
     props: {
         translations: translations[currentLanguage],
     }
-});
+})
 
 export default app;

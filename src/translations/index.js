@@ -1,4 +1,5 @@
-export const translations = {
+export default {
+  locale: 'nl',
   nl: {
     common: {
       add: "Voeg toe",
@@ -146,6 +147,46 @@ export const translations = {
       eventSpecialist: "Event Specialist korting",
       eventPartner: "Event Partner korting",
       eventPartnerInvalid: "Deze korting is alleen geldig bij aanschaf Thema én Branding",
+    },
+    chauffeur: {
+      login: {
+        title: "Chauffeur Portaal",
+        email: "E-mail",
+        password: "Wachtwoord",
+        submit: "Inloggen",
+        loading: "Inloggen...",
+        emailPlaceholder: "naam@voorbeeld.nl",
+        passwordPlaceholder: "••••••••"
+      },
+      portal: {
+        welcome: "Welkom",
+        logout: "Uitloggen",
+        loading: "Evenementen laden...",
+        noEvents: "Geen evenementen gevonden"
+      },
+      events: {
+        start: "Start",
+        end: "Eind",
+        location: "Locatie",
+        travelTime: "Reistijd",
+        minutes: "minuten",
+        availability: "Beschikbaarheid",
+        selectStatus: "Selecteer status",
+        updating: "Bijwerken...",
+        loadingStatus: "Status laden...",
+        statuses: {
+          available: "✅ Beschikbaar",
+          notAvailable: "🛑 Niet Beschikbaar",
+          maybeAvailable: "💅 Misschien Beschikbaar"
+        }
+      }
+    },
+    errors: {
+      invalidCredentials: "Ongeldige e-mail of wachtwoord",
+      general: "Er is een fout opgetreden. Probeer het opnieuw.",
+      loadingEvents: "Fout bij het laden van evenementen. Probeer het opnieuw.",
+      updateFailed: "Beschikbaarheid bijwerken mislukt. Probeer het opnieuw.",
+      loadingFailed: "Laden van beschikbaarheidsstatus mislukt."
     },
   },
   en: {
@@ -295,6 +336,46 @@ export const translations = {
       eventSpecialist: "Event Specialist discount",
       eventPartner: "Event Partner discount",
       eventPartnerInvalid: "This discount is only valid when purchasing Theme and Branding",
+    },
+    chauffeur: {
+      login: {
+        title: "Chauffeur Portal",
+        email: "Email",
+        password: "Password",
+        submit: "Login",
+        loading: "Logging in...",
+        emailPlaceholder: "name@example.com",
+        passwordPlaceholder: "••••••••"
+      },
+      portal: {
+        welcome: "Welcome",
+        logout: "Logout",
+        loading: "Loading events...",
+        noEvents: "No events found"
+      },
+      events: {
+        start: "Start",
+        end: "End",
+        location: "Location",
+        travelTime: "Travel time",
+        minutes: "minutes",
+        availability: "Availability",
+        selectStatus: "Select status",
+        updating: "Updating...",
+        loadingStatus: "Loading status...",
+        statuses: {
+          available: "✅ Available",
+          notAvailable: "🛑 Not Available",
+          maybeAvailable: "💅 Maybe Available"
+        }
+      }
+    },
+    errors: {
+      invalidCredentials: "Invalid email or password",
+      general: "An error occurred. Please try again.",
+      loadingEvents: "Error loading events. Please try again.",
+      updateFailed: "Failed to update availability. Please try again.",
+      loadingFailed: "Failed to load availability status."
     },
   }
 };

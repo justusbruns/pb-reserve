@@ -225,5 +225,18 @@ export const eventService = {
       console.error('Error creating event:', error);
       throw error;
     }
+  },
+
+  /**
+   * Get events from a specific view
+   */
+  async getFromView(viewName: string): Promise<Records<FieldSet>> {
+    const records = await base('Events')
+      .select({
+        view: viewName,
+        sort: [{ field: 'Starts at', direction: 'asc' }]
+      })
+      .all();
+    return records;
   }
 };

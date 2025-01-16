@@ -141,8 +141,15 @@ export const personService = {
   /**
    * Validate email format
    */
-  validateEmail: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  validateEmail(email: string): boolean {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  },
+
+  /**
+   * Get person by email
+   */
+  async getByEmail(email: string): Promise<Records<FieldSet>> {
+    return await this.list(`{Email} = '${email}'`);
   }
 };
