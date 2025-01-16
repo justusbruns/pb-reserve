@@ -9,9 +9,11 @@
     export let travelTime: number | null = null;
 
     let currentStatus = '';
+    let remarks = '';
     let isUpdating = false;
     let error = '';
     let isLoading = true;
+    let remarksTimeout: NodeJS.Timeout;
 
     const statusOptions = [
         { value: 'Available', label: '✅ Available' },
@@ -29,6 +31,7 @@
             console.log('Loaded availability:', availability);
             if (availability) {
                 currentStatus = availability.Availability;
+                remarks = availability.Remarks || '';
             }
         } catch (err) {
             console.error('Error fetching availability:', err);
@@ -38,8 +41,8 @@
         }
     }
 
-    onMount(() => {
-        loadAvailability();
+    onMount(async () => {
+        await loadAvailability();
     });
 
     async function handleStatusChange(e: Event) {
@@ -59,7 +62,8 @@
             await availabilityService.upsertAvailability(
                 chauffeurId,
                 event.id,
-                status
+                status,
+                remarks
             );
             currentStatus = status;
         } catch (err) {
@@ -86,7 +90,8 @@
             await availabilityService.upsertAvailability(
                 chauffeurId,
                 event.id,
-                status
+                status,
+                remarks
             );
             currentStatus = status;
         } catch (err) {
@@ -97,6 +102,24 @@
         } finally {
             isUpdating = false;
         }
+    }
+
+    function handleRemarksChange() {
+        if (remarksTimeout) {
+            clearTimeout(remarksTimeout);
+        }
+
+        remarksTimeout = setTimeout(async () => {
+            isUpdating = true;
+            try {
+                await availabilityService.upsertAvailability(chauffeurId, event.id, currentStatus, remarks);
+            } catch (err) {
+                console.error('Error updating remarks:', err);
+                error = translations.chauffeur.errors.updateFailed;
+            } finally {
+                isUpdating = false;
+            }
+        }, 500); // Debounce for 500ms
     }
 
     function formatDateTime(date: string) {
@@ -169,6 +192,16 @@
                 >
                     {translations.chauffeur.events.statuses.maybeAvailable}
                 </button>
+            </div>
+            <div class="availability-title"><br/>{translations.chauffeur.events.remarksLabel}</div>
+            <div class="remarks-container">
+                <textarea
+                    bind:value={remarks}
+                    on:input={handleRemarksChange}
+                    placeholder={translations.chauffeur.events.remarksPlaceholder}
+                    rows="2"
+                    disabled={isUpdating}
+                ></textarea>
             </div>
 
             {#if isUpdating}
@@ -283,6 +316,26 @@
 
     .availability-button:disabled {
         opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .remarks-container {
+        margin-top: 1rem;
+        width: 100%;
+    }
+
+    textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 2px solid #C9DA9A;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+        background-color: #497c4c;
+    }
+
+    textarea:disabled {
+        background-color: #497c4c;
         cursor: not-allowed;
     }
 

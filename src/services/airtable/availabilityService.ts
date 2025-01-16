@@ -5,6 +5,7 @@ interface Availability {
     Availability: 'Available' | 'Not Available' | 'Maybe Available';
     Chauffeurs: string[];
     Event: string[];
+    Remarks?: string;
 }
 
 const TABLE_NAME = 'Availability';
@@ -35,7 +36,8 @@ export const availabilityService = {
                     id: matchingRecord.id,
                     Availability: matchingRecord.fields.Availability as Availability['Availability'],
                     Chauffeurs: Array.isArray(matchingRecord.fields.Chauffeurs) ? matchingRecord.fields.Chauffeurs : [matchingRecord.fields.Chauffeurs],
-                    Event: Array.isArray(matchingRecord.fields.Event) ? matchingRecord.fields.Event : [matchingRecord.fields.Event]
+                    Event: Array.isArray(matchingRecord.fields.Event) ? matchingRecord.fields.Event : [matchingRecord.fields.Event],
+                    Remarks: matchingRecord.fields.Remarks
                 };
             }
             return null;
@@ -48,10 +50,11 @@ export const availabilityService = {
     async upsertAvailability(
         chauffeurId: string,
         eventId: string,
-        status: Availability['Availability']
+        status: Availability['Availability'],
+        remarks?: string
     ): Promise<Availability> {
         try {
-            console.log('Upserting availability:', { chauffeurId, eventId, status });
+            console.log('Upserting availability:', { chauffeurId, eventId, status, remarks });
             const existing = await this.getByEventAndChauffeur(eventId, chauffeurId);
 
             if (existing?.id) {
@@ -60,7 +63,8 @@ export const availabilityService = {
                 const record = await base(TABLE_NAME).update([{
                     id: existing.id,
                     fields: {
-                        Availability: status
+                        Availability: status,
+                        Remarks: remarks || ''
                     }
                 }]);
 
@@ -68,7 +72,8 @@ export const availabilityService = {
                     id: record[0].id,
                     Availability: record[0].fields.Availability,
                     Chauffeurs: Array.isArray(record[0].fields.Chauffeurs) ? record[0].fields.Chauffeurs : [record[0].fields.Chauffeurs],
-                    Event: Array.isArray(record[0].fields.Event) ? record[0].fields.Event : [record[0].fields.Event]
+                    Event: Array.isArray(record[0].fields.Event) ? record[0].fields.Event : [record[0].fields.Event],
+                    Remarks: record[0].fields.Remarks
                 };
             } else {
                 console.log('Creating new record');
@@ -77,7 +82,8 @@ export const availabilityService = {
                     fields: {
                         Availability: status,
                         Chauffeurs: [chauffeurId],
-                        Event: [eventId]
+                        Event: [eventId],
+                        Remarks: remarks || ''
                     }
                 }]);
 
@@ -85,7 +91,8 @@ export const availabilityService = {
                     id: record[0].id,
                     Availability: record[0].fields.Availability,
                     Chauffeurs: Array.isArray(record[0].fields.Chauffeurs) ? record[0].fields.Chauffeurs : [record[0].fields.Chauffeurs],
-                    Event: Array.isArray(record[0].fields.Event) ? record[0].fields.Event : [record[0].fields.Event]
+                    Event: Array.isArray(record[0].fields.Event) ? record[0].fields.Event : [record[0].fields.Event],
+                    Remarks: record[0].fields.Remarks
                 };
             }
         } catch (error) {

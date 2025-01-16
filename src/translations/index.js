@@ -162,7 +162,8 @@ export default {
         welcome: "Welkom",
         logout: "Uitloggen",
         loading: "Evenementen laden...",
-        noEvents: "Geen evenementen gevonden"
+        noEvents: "Geen evenementen gevonden",
+        retry: "Opnieuw proberen"
       },
       events: {
         start: "Start",
@@ -174,6 +175,8 @@ export default {
         selectStatus: "Selecteer status",
         updating: "Bijwerken...",
         loadingStatus: "Status laden...",
+        remarksPlaceholder: "Opmerkingen...",
+        remarksLabel: "Opmerkingen:",
         statuses: {
           available: "✅ Beschikbaar",
           notAvailable: "🛑 Niet Beschikbaar",
@@ -351,18 +354,21 @@ export default {
         welcome: "Welcome",
         logout: "Logout",
         loading: "Loading events...",
-        noEvents: "No events found"
+        noEvents: "No events found",
+        retry: "Try again"
       },
       events: {
         start: "Start",
         end: "End",
         location: "Location",
-        travelTime: "Travel time",
+        travelTime: "Travel Time",
         minutes: "minutes",
         availability: "Availability",
         selectStatus: "Select status",
         updating: "Updating...",
         loadingStatus: "Loading status...",
+        remarksPlaceholder: "Remarks...",
+        remarksLabel: "Remarks:",
         statuses: {
           available: "✅ Available",
           notAvailable: "🛑 Not Available",

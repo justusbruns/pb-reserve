@@ -12,12 +12,16 @@
     let isLoading = true;
     let error = '';
     let travelTimes: Record<string, number> = {};
+    let hasLoadedEvents = false;
 
     const ORIGIN_ADDRESS = 'Gedempt Hamerkanaal 111, Amsterdam';
     const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
     $: user = $authStore.user;
     $: isAuthenticated = $authStore.isAuthenticated;
+    $: if (isAuthenticated && !hasLoadedEvents) {
+        loadEvents();
+    }
 
     onMount(async () => {
         if (isAuthenticated) {
@@ -26,6 +30,8 @@
     });
 
     async function loadEvents() {
+        if (!isAuthenticated || hasLoadedEvents) return;
+        
         isLoading = true;
         error = '';
 
@@ -33,6 +39,7 @@
             // Fetch events from Chauffeurs view
             const response = await eventService.getFromView('Chauffeurs');
             events = response;
+            hasLoadedEvents = true;
 
             // Calculate travel times for each event
             await Promise.all(
@@ -51,6 +58,7 @@
         } catch (err) {
             console.error('Error loading events:', err);
             error = translations.errors.loadingEvents;
+            hasLoadedEvents = false;
         } finally {
             isLoading = false;
         }
@@ -91,6 +99,8 @@
     }
 
     function handleLogout() {
+        hasLoadedEvents = false;
+        events = [];
         authStore.logout();
     }
 </script>
@@ -99,35 +109,36 @@
     <Login {translations} />
 {:else}
     <div class="portal-container" in:fade>
-        <header>
-            <h1>
-                {translations.chauffeur.portal.welcome}, {user.name}!
-            </h1>
+        <div class="portal-header">
+            <h1>{translations.chauffeur.portal.welcome}, {user?.name || ''}</h1>
             <button class="logout-button" on:click={handleLogout}>
                 {translations.chauffeur.portal.logout}
             </button>
-        </header>
+        </div>
 
         {#if isLoading}
-            <div class="loading">
+            <div class="loading-message">
                 {translations.chauffeur.portal.loading}
             </div>
         {:else if error}
             <div class="error-message">
                 {error}
+                <button on:click={() => loadEvents()}>
+                    {translations.chauffeur.portal.retry}
+                </button>
             </div>
         {:else if events.length === 0}
-            <div class="no-events">
+            <div class="no-events-message">
                 {translations.chauffeur.portal.noEvents}
             </div>
         {:else}
-            <div class="events-list">
+            <div class="events-grid">
                 {#each events as event (event.id)}
-                    <EventCard
+                    <EventCard 
                         {event}
-                        chauffeurId={user.id}
-                        {translations}
+                        chauffeurId={user?.id}
                         travelTime={travelTimes[event.id]}
+                        {translations}
                     />
                 {/each}
             </div>
@@ -144,7 +155,7 @@
         min-height: 100vh;
     }
 
-    header {
+    .portal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -181,7 +192,7 @@
         color: #FFFFFF;
     }
 
-    .loading, .no-events {
+    .loading-message, .no-events-message {
         text-align: center;
         padding: 2rem;
         color: #C9DA9A;
@@ -200,7 +211,7 @@
         font-size: 14px;
     }
 
-    .events-list {
+    .events-grid {
         display: grid;
         gap: 1.5rem;
         padding: 0 20px;
@@ -211,7 +222,7 @@
             padding: 1rem;
         }
 
-        header {
+        .portal-header {
             padding: 0;
             margin-bottom: 1.5rem;
             flex-direction: column;
@@ -227,7 +238,7 @@
             width: 100%;
         }
 
-        .events-list {
+        .events-grid {
             padding: 0;
         }
     }
