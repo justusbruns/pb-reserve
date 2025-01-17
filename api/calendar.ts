@@ -12,7 +12,16 @@ async function getReservedEvents() {
         }
 
         console.log('Starting to fetch reserved events from Airtable...');
-        console.log('Using base ID:', base._airtable._base);
+        
+        if (!base) {
+            console.error('Airtable base is undefined');
+            throw new Error('Failed to initialize Airtable base');
+        }
+
+        console.log('Base object:', {
+            hasSelect: !!base(TABLE_NAME).select,
+            baseId: base._airtable?._base || 'undefined'
+        });
         
         const records = await base(TABLE_NAME)
             .select({
@@ -29,12 +38,15 @@ async function getReservedEvents() {
         }
 
         return records.map(record => {
+            const fields = record.fields;
+            console.log('Processing record:', record.id, 'Fields:', fields);
+            
             const event = {
-                name: record.fields['Event name'] as string,
-                start: new Date(record.fields['Starts at'] as string),
-                end: new Date(record.fields['Stops at'] as string),
-                location: record.fields['Location'] as string,
-                description: record.fields['Notes'] as string
+                name: fields['Event name'] as string,
+                start: new Date(fields['Starts at'] as string),
+                end: new Date(fields['Stops at'] as string),
+                location: fields['Location'] as string,
+                description: fields['Notes'] as string
             };
             console.log('Processed event:', event.name, 'starting at:', event.start);
             return event;
@@ -83,7 +95,7 @@ export default async function handler(
     request: VercelRequest,
     response: VercelResponse
 ) {
-    console.log('Calendar API handler called - v1.0.1');
+    console.log('Calendar API handler called - v1.0.2');
     console.log('Request method:', request.method);
     console.log('Environment check - VITE_AIRTABLE_PAT:', process.env.VITE_AIRTABLE_PAT ? 'Set' : 'Not set');
 
@@ -105,9 +117,12 @@ export default async function handler(
         return response.status(200).send(calendarString);
     } catch (error) {
         console.error('Error in calendar handler:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Detailed error:', errorMessage);
+        
         return response.status(500).json({ 
             error: 'Failed to generate calendar',
-            details: error instanceof Error ? error.message : 'Unknown error',
+            details: errorMessage,
             timestamp: new Date().toISOString()
         });
     }
