@@ -4,7 +4,8 @@
     { "source": "/en", "destination": "/" },
     { "source": "/en/(.*)", "destination": "/$1" },
     { "source": "/chauffeur", "destination": "/" },
-    { "source": "/en/chauffeur", "destination": "/" }
+    { "source": "/en/chauffeur", "destination": "/" },
+    { "source": "/api/calendar", "destination": "/api/calendar" }
   ],
   "cleanUrls": true,
   "functions": {
@@ -14,9 +15,6 @@
       "maxDuration": 10
     }
   },
-  "routes": [
-    { "src": "/api/calendar", "dest": "/api/calendar.ts" }
-  ],
   "env": {
     "VITE_AIRTABLE_PAT": "@vite_airtable_pat"
   }
