@@ -4,20 +4,46 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [svelte(), tsconfigPaths()],
+  server: {
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+      clientPort: 5173
+    }
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+      'flatpickr/dist/l10n/nl.js': 'flatpickr/dist/l10n/nl.js',
+      'flatpickr/dist/flatpickr.css': 'flatpickr/dist/flatpickr.css'
+    }
+  },
+  optimizeDeps: {
+    include: [
+      'flatpickr',
+      'flatpickr/dist/l10n/nl.js',
+      'canvas-confetti',
+      'mapbox-gl'
+    ]
+  },
   build: {
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        manualChunks: {
+          'vendor': [
+            'svelte',
+            'flatpickr',
+            'mapbox-gl',
+            'canvas-confetti'
+          ]
+        }
       }
     }
-  },
-  optimizeDeps: {
-    include: ['@vercel/node']
-  },
-  ssr: {
-    noExternal: true
   }
 });
