@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import ical from 'ical-generator';
-import { base } from './config';
+import base from './config.js';
 
 const TABLE_NAME = 'Events';
 
