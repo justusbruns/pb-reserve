@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
-    "@vercel/node": "^3.0.14",
+    "@vercel/node": "^4.0.0",
     "airtable": "^0.12.2",
     "canvas-confetti": "^1.9.3",
     "flatpickr": "^4.6.13",
