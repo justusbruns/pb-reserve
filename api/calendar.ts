@@ -7,10 +7,11 @@ const TABLE_NAME = 'Events';
 async function getReservedEvents() {
     try {
         if (!process.env.VITE_AIRTABLE_PAT) {
+            console.error('Missing environment variable: VITE_AIRTABLE_PAT');
             throw new Error('Airtable PAT not found in environment variables');
         }
 
-        console.log('Fetching reserved events from Airtable...');
+        console.log('Starting to fetch reserved events from Airtable...');
         console.log('Using base ID:', base._airtable._base);
         
         const records = await base(TABLE_NAME)
@@ -20,10 +21,10 @@ async function getReservedEvents() {
             })
             .all();
 
-        console.log(`Found ${records.length} reserved events`);
+        console.log(`Found ${records.length} reserved events in Airtable`);
         
         if (!records.length) {
-            console.log('No reserved events found');
+            console.log('No reserved events found in Airtable');
             return [];
         }
 
@@ -35,7 +36,7 @@ async function getReservedEvents() {
                 location: record.fields['Location'] as string,
                 description: record.fields['Notes'] as string
             };
-            console.log('Processed event:', event.name);
+            console.log('Processed event:', event.name, 'starting at:', event.start);
             return event;
         });
     } catch (error) {
@@ -47,7 +48,7 @@ async function getReservedEvents() {
 async function generateCalendar() {
     try {
         const events = await getReservedEvents();
-        console.log(`Generating calendar with ${events.length} events`);
+        console.log(`Starting calendar generation with ${events.length} events`);
         
         const calendar = ical({
             name: 'PB Reserve Events',
@@ -68,6 +69,7 @@ async function generateCalendar() {
                 description: event.description || '',
                 url: 'https://pb-reserve.vercel.app'
             });
+            console.log('Added event to calendar:', event.name);
         });
 
         return calendar;
@@ -81,7 +83,7 @@ export default async function handler(
     request: VercelRequest,
     response: VercelResponse
 ) {
-    console.log('Calendar API handler called');
+    console.log('Calendar API handler called - v1.0.1');
     console.log('Request method:', request.method);
     console.log('Environment check - VITE_AIRTABLE_PAT:', process.env.VITE_AIRTABLE_PAT ? 'Set' : 'Not set');
 
@@ -90,7 +92,7 @@ export default async function handler(
     }
 
     try {
-        console.log('Starting calendar generation...');
+        console.log('Starting calendar generation process...');
         const calendar = await generateCalendar();
         
         response.setHeader('Content-Type', 'text/calendar; charset=utf-8');
@@ -98,14 +100,15 @@ export default async function handler(
         response.setHeader('Cache-Control', 'public, max-age=3600');
         
         const calendarString = calendar.toString();
-        console.log('Calendar generated successfully');
+        console.log('Calendar generated successfully, sending response');
         
         return response.status(200).send(calendarString);
     } catch (error) {
         console.error('Error in calendar handler:', error);
         return response.status(500).json({ 
             error: 'Failed to generate calendar',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
         });
     }
 }
