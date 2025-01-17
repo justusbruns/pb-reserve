@@ -19,5 +19,7 @@
     "env": {
       "NODE_VERSION": "18.x"
     }
-  }
+  },
+  "installCommand": "npm install",
+  "buildCommand": "npm install && npm run build"
 }
