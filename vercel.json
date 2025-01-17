@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "vite",
   "rewrites": [
     { "source": "/en", "destination": "/" },
     { "source": "/en/(.*)", "destination": "/$1" },
@@ -14,12 +17,5 @@
       "memory": 1024,
       "maxDuration": 10
     }
-  },
-  "build": {
-    "env": {
-      "NODE_VERSION": "18.x"
-    }
-  },
-  "installCommand": "npm install",
-  "buildCommand": "npm install && npm run build"
+  }
 }
