@@ -6,7 +6,13 @@ const TABLE_NAME = 'Events';
 
 async function getReservedEvents() {
     try {
+        if (!process.env.VITE_AIRTABLE_PAT) {
+            throw new Error('Airtable PAT not found in environment variables');
+        }
+
         console.log('Fetching reserved events from Airtable...');
+        console.log('Using base ID:', base._airtable._base);
+        
         const records = await base(TABLE_NAME)
             .select({
                 filterByFormula: "{Status} = 'reserved'",
@@ -34,7 +40,7 @@ async function getReservedEvents() {
         });
     } catch (error) {
         console.error('Error fetching reserved events:', error);
-        throw new Error('Failed to fetch events from Airtable');
+        throw error;
     }
 }
 
@@ -75,6 +81,10 @@ export default async function handler(
     request: VercelRequest,
     response: VercelResponse
 ) {
+    console.log('Calendar API handler called');
+    console.log('Request method:', request.method);
+    console.log('Environment check - VITE_AIRTABLE_PAT:', process.env.VITE_AIRTABLE_PAT ? 'Set' : 'Not set');
+
     if (request.method !== 'GET') {
         return response.status(405).json({ error: 'Method not allowed' });
     }
@@ -87,9 +97,15 @@ export default async function handler(
         response.setHeader('Content-Disposition', 'attachment; filename="pb-reserve-events.ics"');
         response.setHeader('Cache-Control', 'public, max-age=3600');
         
-        return response.status(200).send(calendar.toString());
+        const calendarString = calendar.toString();
+        console.log('Calendar generated successfully');
+        
+        return response.status(200).send(calendarString);
     } catch (error) {
         console.error('Error in calendar handler:', error);
-        return response.status(500).json({ error: 'Failed to generate calendar' });
+        return response.status(500).json({ 
+            error: 'Failed to generate calendar',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 }

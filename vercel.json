@@ -5,5 +5,13 @@
     { "source": "/chauffeur", "destination": "/" },
     { "source": "/en/chauffeur", "destination": "/" }
   ],
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/*.ts": {
+      "runtime": "@vercel/node@3.0.0"
+    }
+  },
+  "routes": [
+    { "src": "/api/calendar", "dest": "/api/calendar.ts" }
+  ]
 }
