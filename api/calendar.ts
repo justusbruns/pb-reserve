@@ -109,7 +109,7 @@ export default async function handler(
         
         response.setHeader('Content-Type', 'text/calendar; charset=utf-8');
         response.setHeader('Content-Disposition', 'attachment; filename="pb-reserve-events.ics"');
-        response.setHeader('Cache-Control', 'public, max-age=3600');
+        response.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
         
         const calendarString = calendar.toString();
         console.log('Calendar generated successfully, sending response');
