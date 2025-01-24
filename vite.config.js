@@ -14,42 +14,35 @@ export default defineConfig({
       clientPort: 5173
     }
   },
-  resolve: {
-    alias: {
-      '@': '/src',
-      'flatpickr/dist/l10n/nl.js': 'flatpickr/dist/l10n/nl.js',
-      'flatpickr/dist/flatpickr.css': 'flatpickr/dist/flatpickr.css'
-    }
-  },
-  optimizeDeps: {
-    include: [
-      'flatpickr',
-      'flatpickr/dist/l10n/nl.js',
-      'canvas-confetti',
-      'mapbox-gl'
-    ]
-  },
   build: {
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
     assetsDir: 'assets',
     rollupOptions: {
-      external: [
-        '@mapbox/mapbox-gl-geocoder',
-        '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
-      ],
       output: {
         manualChunks: {
-          'vendor': [
-            'svelte',
-            'flatpickr',
+          vendor: [
             'mapbox-gl',
             'canvas-confetti'
           ]
         },
-        assetFileNames: 'assets/[name].[ext]'
+        assetFileNames: 'assets/[name].[ext]',
+        globals: {
+          '@mapbox/mapbox-gl-geocoder': 'MapboxGeocoder'
+        }
       }
     }
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+      'flatpickr/dist/l10n/nl.js': 'flatpickr/dist/l10n/nl.js',
+      'flatpickr/dist/flatpickr.css': 'flatpickr/dist/flatpickr.css',
+      '@mapbox/mapbox-gl-geocoder': 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js'
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@mapbox/mapbox-gl-geocoder']
   }
 });

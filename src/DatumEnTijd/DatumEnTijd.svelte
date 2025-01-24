@@ -25,16 +25,21 @@
   import { Dutch } from 'flatpickr/dist/l10n/nl.js';
   import 'flatpickr/dist/flatpickr.css';
   import confetti from 'canvas-confetti';
-  import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
   import type { Translations } from './types';
 
-  // Add Mapbox geocoder CSS to head
+  // Add Mapbox geocoder CSS
   onMount(() => {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css';
     document.head.appendChild(link);
   });
+
+  declare global {
+    interface Window {
+      MapboxGeocoder: any;
+    }
+  }
 
   export let translations: Translations;
   let currentLang = 'nl';
@@ -398,7 +403,7 @@
       }
 
       // Initialize Mapbox geocoder
-      const geocoder = new MapboxGeocoder({
+      const geocoder = new window.MapboxGeocoder({
         accessToken: MAPBOX_TOKEN,
         types: 'address',
         language: currentPath.startsWith('/en') ? 'en' : 'nl',
