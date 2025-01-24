@@ -20,15 +20,16 @@ export default defineConfig({
     sourcemap: true,
     assetsDir: 'assets',
     rollupOptions: {
+      external: ['mapbox-gl'],
       output: {
         manualChunks: {
           vendor: [
-            'mapbox-gl',
             'canvas-confetti'
           ]
         },
         assetFileNames: 'assets/[name].[ext]',
         globals: {
+          'mapbox-gl': 'mapboxgl',
           '@mapbox/mapbox-gl-geocoder': 'MapboxGeocoder'
         }
       }
