@@ -1025,8 +1025,9 @@
       bbox
     });
     
-    // Use the actual route geometry in the URL
-    const url = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/geojson(${encodeURIComponent(JSON.stringify(geojson))}),pin-s-warehouse+326334(${originLng},${originLat}),pin-s-car+326334(${destLng},${destLat})/[${bbox}]/500x400@2x?access_token=${MAPBOX_TOKEN}&style_filter=[{"id":"background","color":"#F0F9D5"},{"id":"water","color":"#C9DA9A"},{"id":"road","color":"#326334"},{"id":"road-secondary-tertiary","color":"#326334"},{"id":"road-primary","color":"#326334"}]`;
+    // Use the actual route geometry in the URL with cache busting
+    const timestamp = Date.now();
+    const url = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/geojson(${encodeURIComponent(JSON.stringify(geojson))}),pin-s-warehouse+326334(${originLng},${originLat}),pin-s-car+326334(${destLng},${destLat})/[${bbox}]/500x400@2x?access_token=${MAPBOX_TOKEN}&style_filter=[{"id":"background","color":"#F0F9D5"},{"id":"water","color":"#C9DA9A"},{"id":"road","color":"#326334"},{"id":"road-secondary-tertiary","color":"#326334"},{"id":"road-primary","color":"#326334"}]&t=${timestamp}`;
     
     console.log('Generated map URL:', url);
     return url;
@@ -1783,11 +1784,10 @@
             src={staticMapUrl} 
             alt=""
             style="opacity: 0; position: absolute"
+            crossorigin="anonymous"
             on:load={() => {
               mapImageLoaded = true;
-              setTimeout(() => {
-                isMapLoading = false;
-              }, 300);
+              isMapLoading = false;
             }}
           />
         {/if}
