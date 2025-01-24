@@ -1,3 +1,10 @@
+/* Text input styles */
+.text {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 /* Mapbox Geocoder Custom Styles */
 #geocoder {
   width: 100% !important;
