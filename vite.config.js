@@ -35,7 +35,10 @@ export default defineConfig({
     sourcemap: true,
     assetsDir: 'assets',
     rollupOptions: {
-      external: ['@mapbox/mapbox-gl-geocoder'],
+      external: [
+        '@mapbox/mapbox-gl-geocoder',
+        '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
+      ],
       output: {
         manualChunks: {
           'vendor': [

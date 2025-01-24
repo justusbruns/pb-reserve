@@ -26,8 +26,15 @@
   import 'flatpickr/dist/flatpickr.css';
   import confetti from 'canvas-confetti';
   import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-  import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
   import type { Translations } from './types';
+
+  // Add Mapbox geocoder CSS to head
+  onMount(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css';
+    document.head.appendChild(link);
+  });
 
   export let translations: Translations;
   let currentLang = 'nl';
