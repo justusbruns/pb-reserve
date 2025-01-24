@@ -25,9 +25,13 @@
   import { Dutch } from 'flatpickr/dist/l10n/nl.js';
   import 'flatpickr/dist/flatpickr.css';
   import confetti from 'canvas-confetti';
-  import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-  import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
   import type { Translations } from './types';
+
+  declare global {
+    interface Window {
+      MapboxGeocoder: any;
+    }
+  }
 
   export let translations: Translations;
   let currentLang = 'nl';
@@ -391,23 +395,25 @@
       }
 
       // Initialize Mapbox geocoder
-      const geocoder = new MapboxGeocoder({
-        accessToken: MAPBOX_TOKEN,
-        types: 'address',
-        language: currentPath.startsWith('/en') ? 'en' : 'nl',
-        placeholder: getTranslation('dateTime.address.search') || 'Zoek een adres'
-      });
+      if (window.MapboxGeocoder) {
+        const geocoder = new window.MapboxGeocoder({
+          accessToken: MAPBOX_TOKEN,
+          types: 'address',
+          language: currentPath.startsWith('/en') ? 'en' : 'nl',
+          placeholder: getTranslation('dateTime.address.search') || 'Zoek een adres'
+        });
 
-      // Add geocoder to the input element
-      const geocoderContainer = document.getElementById('geocoder');
-      if (geocoderContainer) {
-        geocoder.addTo(geocoderContainer);
+        // Add geocoder to the input element
+        const geocoderContainer = document.getElementById('geocoder');
+        if (geocoderContainer) {
+          geocoder.addTo(geocoderContainer);
+        }
+
+        // Listen for result selection
+        geocoder.on('result', (event) => {
+          handleAddressSelect(event);
+        });
       }
-
-      // Listen for result selection
-      geocoder.on('result', (event) => {
-        handleAddressSelect(event);
-      });
 
       // Initialize datepicker
       const dateInput = document.getElementById('date-range');
@@ -1485,9 +1491,16 @@
 </script>
 
 <style>
+
 :global(.text) {
   width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.input-container {
+  width: 100%;
+  max-width: 100%;
 }
 
 :global(#geocoder) {
@@ -1672,6 +1685,13 @@
   margin: 20px auto;
   padding: 15px;
   color: #C9DA9A;
+  font-size: 18px;
+  font-family: "Inter", sans-serif;
+  border: 2px solid #C9DA9A;
+  border-radius: 10px;
+  background-color: rgba(201, 218, 154, 0.1);
+  max-width: fit-content;
+  font-weight: normal;
 }
 
 .success-overlay {
