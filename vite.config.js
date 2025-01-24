@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    host: '0.0.0.0',
     hmr: {
       protocol: 'ws',
       host: 'localhost',
@@ -37,13 +38,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': '/src',
-      'flatpickr/dist/l10n/nl.js': 'flatpickr/dist/l10n/nl.js',
-      'flatpickr/dist/flatpickr.css': 'flatpickr/dist/flatpickr.css',
-      '@mapbox/mapbox-gl-geocoder': 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js'
+      '@': '/src'
     }
   },
   optimizeDeps: {
-    exclude: ['@mapbox/mapbox-gl-geocoder']
+    include: ['mapbox-gl']
   }
 });
