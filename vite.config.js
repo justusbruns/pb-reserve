@@ -33,6 +33,7 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -42,7 +43,8 @@ export default defineConfig({
             'mapbox-gl',
             'canvas-confetti'
           ]
-        }
+        },
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   }
