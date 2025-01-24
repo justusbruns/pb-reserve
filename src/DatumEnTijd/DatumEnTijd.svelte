@@ -1967,9 +1967,15 @@
         <div class="description-text">
           <span class="description-text-span2">{formatCurrency(500 * calculateEventDays(startDate, endDate))} {getTranslation('extras.printOption.totalText')}</span>
         </div>
-        <div class="button" class:selected={printOptionSelected} on:click={togglePrintOption}>
+        <button 
+          type="button"
+          class="button" 
+          class:selected={printOptionSelected} 
+          on:click={togglePrintOption}
+          on:keydown={(e) => e.key === 'Enter' && togglePrintOption()}
+        >
           {printOptionSelected ? getTranslation('common.remove') : getTranslation('common.add')}
-        </div>
+        </button>
       </div>
     </div>
 
@@ -1984,9 +1990,15 @@
         <div class="description-text">
           <span class="description-text-span2">{formatCurrency(750)}</span>
         </div>
-        <div class="button" class:selected={brandingAdded} on:click={toggleBranding}>
+        <button 
+          type="button"
+          class="button" 
+          class:selected={brandingAdded} 
+          on:click={toggleBranding}
+          on:keydown={(e) => e.key === 'Enter' && toggleBranding()}
+        >
           {brandingAdded ? getTranslation('common.remove') : getTranslation('common.add')}
-        </div>
+        </button>
       </div>
     </div>
 
@@ -2001,9 +2013,15 @@
         <div class="description-text">
           <span class="description-text-span2">{formatCurrency(750)}</span>
         </div>
-        <div class="button" class:selected={themaAdded} on:click={toggleThema}>
+        <button 
+          type="button"
+          class="button" 
+          class:selected={themaAdded} 
+          on:click={toggleThema}
+          on:keydown={(e) => e.key === 'Enter' && toggleThema()}
+        >
           {themaAdded ? getTranslation('common.remove') : getTranslation('common.add')}
-        </div>
+        </button>
       </div>
     </div>
 
@@ -2018,9 +2036,15 @@
         <div class="description-text">
           <span class="description-text-span2">{formatCurrency(350)}</span>
         </div>
-        <div class="button" class:selected={getRoastedAdded} on:click={toggleGetRoasted}>
+        <button 
+          type="button"
+          class="button" 
+          class:selected={getRoastedAdded} 
+          on:click={toggleGetRoasted}
+          on:keydown={(e) => e.key === 'Enter' && toggleGetRoasted()}
+        >
           {getRoastedAdded ? getTranslation('common.remove') : getTranslation('common.add')}
-        </div>
+        </button>
       </div>
     </div>
 
@@ -2035,9 +2059,15 @@
         <div class="description-text">
           <span class="description-text-span2">{getTranslation('pricing.priceUponRequest')}</span>
         </div>
-        <div class="button" class:selected={keynoteAdded} on:click={toggleKeynote}>
+        <button 
+          type="button"
+          class="button" 
+          class:selected={keynoteAdded} 
+          on:click={toggleKeynote}
+          on:keydown={(e) => e.key === 'Enter' && toggleKeynote()}
+        >
           {keynoteAdded ? getTranslation('common.remove') : getTranslation('common.add')}
-        </div>
+        </button>
       </div>
     </div>
 
