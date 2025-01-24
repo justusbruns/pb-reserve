@@ -394,26 +394,28 @@
         return;
       }
 
-      // Initialize Mapbox geocoder
-      if (window.MapboxGeocoder) {
-        const geocoder = new window.MapboxGeocoder({
-          accessToken: MAPBOX_TOKEN,
-          types: 'address',
-          language: currentPath.startsWith('/en') ? 'en' : 'nl',
-          placeholder: getTranslation('dateTime.address.search') || 'Zoek een adres'
-        });
+      // Initialize Mapbox geocoder with a slight delay to ensure styles are loaded
+      setTimeout(() => {
+        if (window.MapboxGeocoder) {
+          const geocoder = new window.MapboxGeocoder({
+            accessToken: MAPBOX_TOKEN,
+            types: 'address',
+            language: currentPath.startsWith('/en') ? 'en' : 'nl',
+            placeholder: getTranslation('dateTime.address.search') || 'Zoek een adres'
+          });
 
-        // Add geocoder to the input element
-        const geocoderContainer = document.getElementById('geocoder');
-        if (geocoderContainer) {
-          geocoder.addTo(geocoderContainer);
+          // Add geocoder to the input element
+          const geocoderContainer = document.getElementById('geocoder');
+          if (geocoderContainer) {
+            geocoder.addTo(geocoderContainer);
+          }
+
+          // Listen for result selection
+          geocoder.on('result', (event) => {
+            handleAddressSelect(event);
+          });
         }
-
-        // Listen for result selection
-        geocoder.on('result', (event) => {
-          handleAddressSelect(event);
-        });
-      }
+      }, 100); // Small delay to ensure styles are loaded
 
       // Initialize datepicker
       const dateInput = document.getElementById('date-range');
@@ -1517,6 +1519,7 @@
   background: #326334 !important;
   border-radius: 7px !important;
   min-height: 50px !important;
+  margin: 0 !important;
 }
 
 /* Container styling */
