@@ -9,6 +9,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@mapbox/mapbox-gl-geocoder": "^5.0.3",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
     "@vercel/node": "^4.0.0",
     "airtable": "^0.12.2",

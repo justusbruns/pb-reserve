@@ -408,6 +408,59 @@
           const geocoderContainer = document.getElementById('geocoder');
           if (geocoderContainer) {
             geocoder.addTo(geocoderContainer);
+
+            // Apply styles directly to geocoder elements after adding to DOM
+            const geocoderInput = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder--input');
+            if (geocoderInput) {
+              Object.assign(geocoderInput.style, {
+                height: '50px',
+                border: 'none',
+                background: '#326334',
+                color: '#C9DA9A',
+                padding: '12px 16px',
+                fontFamily: '"Inter", sans-serif',
+                fontSize: '16px',
+                minHeight: '50px',
+                width: '100%',
+                margin: '0',
+                borderRadius: '7px'
+              });
+            }
+
+            const geocoderWrapper = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder');
+            if (geocoderWrapper) {
+              Object.assign(geocoderWrapper.style, {
+                width: '100%',
+                maxWidth: '100%',
+                boxShadow: 'none',
+                fontFamily: '"Inter", sans-serif',
+                border: 'none',
+                background: '#326334',
+                borderRadius: '7px',
+                minHeight: '50px',
+                margin: '0'
+              });
+            }
+
+            // Hide icons and buttons
+            const icons = geocoderContainer.querySelectorAll('.mapboxgl-ctrl-geocoder--icon');
+            icons.forEach(icon => icon.style.display = 'none');
+
+            const buttons = geocoderContainer.querySelectorAll('.mapboxgl-ctrl-geocoder--button');
+            buttons.forEach(button => button.style.display = 'none');
+
+            // Style suggestions
+            const suggestionsEl = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder--suggestions');
+            if (suggestionsEl) {
+              Object.assign(suggestionsEl.style, {
+                background: '#326334',
+                border: '2px solid #C9DA9A',
+                borderTop: 'none',
+                borderRadius: '0 0 7px 7px',
+                color: '#C9DA9A',
+                maxHeight: '200px'
+              });
+            }
           }
 
           // Listen for result selection
@@ -1493,93 +1546,172 @@
 </script>
 
 <style>
-:global(.text) {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
+  /* Scoped styles for the geocoder container */
+  :global(#geocoder) {
+    width: 100%;
+    max-width: 100%;
+  }
 
-.input-container {
-  width: 100%;
-  max-width: 100%;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder) {
+    width: 100%;
+    max-width: 100%;
+    box-shadow: none;
+    font-family: "Inter", sans-serif;
+    border: none;
+    background: #326334;
+    border-radius: 7px;
+    min-height: 50px;
+    margin: 0;
+  }
 
-.keynote-remark {
-  text-align: center;
-  margin: 20px auto;
-  padding: 15px;
-  color: #C9DA9A;
-  font-size: 18px;
-  font-family: "Inter", sans-serif;
-  border: 2px solid #C9DA9A;
-  border-radius: 10px;
-  background-color: rgba(201, 218, 154, 0.1);
-  max-width: fit-content;
-  font-weight: normal;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--input) {
+    height: 50px;
+    border: none;
+    background: #326334;
+    color: #C9DA9A;
+    padding: 12px 16px;
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    min-height: 50px;
+    width: 100%;
+    margin: 0;
+    border-radius: 7px;
+  }
 
-.success-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--input::placeholder) {
+    color: #C9DA9A;
+    opacity: 1;
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    font-weight: normal;
+  }
 
-.success-modal {
-  background: #326334;
-  padding: 40px;
-  border-radius: 15px;
-  text-align: center;
-  color: #C9DA9A;
-  max-width: 90%;
-  width: 500px;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--icon),
+  :global(#geocoder .mapboxgl-ctrl-geocoder--button) {
+    display: none;
+  }
 
-.success-icon {
-  margin-bottom: 20px;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 20px;
-  background-image: var(--pb-logo);
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestions) {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #326334;
+    border: 2px solid #C9DA9A;
+    border-top: none;
+    border-radius: 0 0 7px 7px;
+    margin-top: -2px;
+    color: #C9DA9A;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+  }
 
-.success-modal h2 {
-  font-size: 24px;
-  margin-bottom: 15px;
-  color: #C9DA9A;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestion) {
+    color: #C9DA9A;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(201, 218, 154, 0.2);
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    background: #326334;
+    margin: 0;
+  }
 
-.success-modal p {
-  font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 25px;
-  color: #C9DA9A;
-}
+  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestion *) {
+    background: #326334;
+    margin: 0;
+  }
 
-.back-button {
-  display: inline-block;
-  padding: 12px 24px;
-  background: #C9DA9A;
-  color: #326334;
-  text-decoration: none;
-  border-radius: 7px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
+  :global(.text) {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
 
-.back-button:hover {
-  background: #d8e4b6;
-  transform: translateY(-2px);
-}
+  .input-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .keynote-remark {
+    text-align: center;
+    margin: 20px auto;
+    padding: 15px;
+    color: #C9DA9A;
+    font-size: 18px;
+    font-family: "Inter", sans-serif;
+    border: 2px solid #C9DA9A;
+    border-radius: 10px;
+    background-color: rgba(201, 218, 154, 0.1);
+    max-width: fit-content;
+    font-weight: normal;
+  }
+
+  .success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .success-modal {
+    background: #326334;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    color: #C9DA9A;
+    max-width: 90%;
+    width: 500px;
+  }
+
+  .success-icon {
+    margin-bottom: 20px;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+    background-image: var(--pb-logo);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .success-modal h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #C9DA9A;
+  }
+
+  .success-modal p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 25px;
+    color: #C9DA9A;
+  }
+
+  .back-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #C9DA9A;
+    color: #326334;
+    text-decoration: none;
+    border-radius: 7px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .back-button:hover {
+    background: #d8e4b6;
+    transform: translateY(-2px);
+  }
 </style>
 
 <div class="inclusief">
