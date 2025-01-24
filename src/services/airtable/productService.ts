@@ -17,14 +17,26 @@ export const productService = {
    */
   async getByName(name: string) {
     try {
+      console.log(`Fetching product with name: "${name}"`);
       const records = await base('Products / Services')
         .select({
           filterByFormula: `{Name} = '${name}'`
         })
         .all();
+      
+      if (records.length === 0) {
+        console.error(`No product found with name: "${name}"`);
+        return null;
+      }
+      
+      if (records.length > 1) {
+        console.warn(`Multiple products found with name: "${name}". Using first one.`);
+      }
+      
+      console.log(`Found product: ${name}`, records[0]);
       return records[0];
     } catch (error) {
-      console.error('Error getting product by name:', error);
+      console.error(`Error getting product by name "${name}":`, error);
       throw error;
     }
   },

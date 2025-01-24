@@ -1,20 +1,25 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
   import ChauffeurPortal from "./chauffeur/ChauffeurPortal.svelte";
   import DatumEnTijd from "./DatumEnTijd/DatumEnTijd.svelte";
   import EnvTest from './components/EnvTest.svelte';
-  import translations from "./translations";
+  import type { Translations } from "./DatumEnTijd/types";
   import "./vars.css";
   import "./styles.css";
 
+  export let translations: Translations;
+
   // Function to determine the current language based on the URL
   function getCurrentLanguage() {
-    const path = window.location.pathname;
-    return path.startsWith('/en') ? 'en' : 'nl';
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      return path.startsWith('/en') ? 'en' : 'nl';
+    }
+    return 'nl'; // Default to Dutch
   }
 
   const currentLanguage = getCurrentLanguage();
-  const t = translations[currentLanguage];
+  $: currentTranslations = translations[currentLanguage];
 
   let isLoading = true;
 
@@ -22,7 +27,7 @@
     isLoading = false;
   });
 
-  const path = window.location.pathname;
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
   const isChauffeurRoute = path.includes('/chauffeur');
 </script>
 
@@ -31,10 +36,10 @@
     <div class="loading">Loading...</div>
   {:else}
     {#if isChauffeurRoute}
-      <ChauffeurPortal translations={t} />
+      <ChauffeurPortal translations={currentTranslations} />
     {:else}
       <div>
-        <DatumEnTijd translations={t} />
+        <DatumEnTijd translations={currentTranslations} />
         <EnvTest />
       </div>
     {/if}
@@ -52,7 +57,5 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    font-size: 1.2rem;
-    color: var(--text);
   }
 </style>
