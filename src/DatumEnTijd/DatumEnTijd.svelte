@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import mapboxgl from "mapbox-gl";
+  // Using the global mapboxgl instead of importing
+  const mapboxgl = window.mapboxgl;
   import { fade, scale } from 'svelte/transition';
   import dateImage from '../images/Date.png?url';
   import locationImage from '../images/Location.png?url';
