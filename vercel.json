@@ -1,8 +1,6 @@
 {
   "version": 2,
   "framework": "sveltekit",
-  "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install",
   "rewrites": [
     { "source": "/en", "destination": "/" },
     { "source": "/en/(.*)", "destination": "/$1" },

@@ -1,9 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [sveltekit(), tsconfigPaths()],
+  plugins: [sveltekit()],
   server: {
     port: 5173,
     host: true
@@ -19,8 +18,5 @@ export default defineConfig({
     rollupOptions: {
       external: ['mapbox-gl', '@mapbox/mapbox-gl-geocoder']
     }
-  },
-  optimizeDeps: {
-    include: ['@sveltejs/kit', 'vite']
   }
 });
