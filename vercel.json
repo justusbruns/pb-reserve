@@ -1,8 +1,8 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "framework": "vite",
+  "installCommand": "npm install --include=dev",
+  "framework": "sveltekit",
   "rewrites": [
     { "source": "/en", "destination": "/" },
     { "source": "/en/(.*)", "destination": "/$1" },
