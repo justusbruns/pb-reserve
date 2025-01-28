@@ -1,0 +1,9 @@
+const MAPBOX_TOKEN = "pk.eyJ1IjoianVzdHVzYnJ1bnMiLCJhIjoiY2l2MHQ3cHI4MDVjZDJ0bDFwcDBrMHZ1dCJ9.icD7LzFLwqnEqOAu34E7xw";
+const AIRTABLE_PAT = "patQcBAUMZwMREYXj.24ef230ffa1f0535d81aa74fb91493707fc347672f7e22c29e6057300a34d226";
+const AIRTABLE_BASE_ID = "apphYtwSYRt7UDukL";
+export {
+  AIRTABLE_PAT as A,
+  MAPBOX_TOKEN as M,
+  AIRTABLE_BASE_ID as a
+};
+//# sourceMappingURL=private.js.map

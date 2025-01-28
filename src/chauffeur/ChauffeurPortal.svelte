@@ -45,9 +45,10 @@
             await Promise.all(
                 events.map(async (event) => {
                     try {
+                        // Use the Location field which contains the formatted delivery address
                         const travelTime = await calculateTravelTime(
                             ORIGIN_ADDRESS,
-                            event.fields.Location
+                            event.fields.Location // This is already the formatted delivery address
                         );
                         travelTimes[event.id] = travelTime;
                     } catch (err) {
@@ -72,23 +73,41 @@
                     origin
                 )}.json?access_token=${MAPBOX_TOKEN}`
             );
+            if (!originResponse.ok) {
+                throw new Error(`Error fetching origin coordinates: ${originResponse.status}`);
+            }
             const originData = await originResponse.json();
+            if (!originData.features || originData.features.length === 0) {
+                throw new Error('No coordinates found for origin address');
+            }
             const originCoords = originData.features[0].geometry.coordinates;
 
-            // Get coordinates for destination
+            // Get coordinates for destination (delivery address)
             const destResponse = await fetch(
                 `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
                     destination
                 )}.json?access_token=${MAPBOX_TOKEN}`
             );
+            if (!destResponse.ok) {
+                throw new Error(`Error fetching destination coordinates: ${destResponse.status}`);
+            }
             const destData = await destResponse.json();
+            if (!destData.features || destData.features.length === 0) {
+                throw new Error('No coordinates found for delivery address');
+            }
             const destCoords = destData.features[0].geometry.coordinates;
 
             // Get directions
             const directionsResponse = await fetch(
                 `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?access_token=${MAPBOX_TOKEN}`
             );
+            if (!directionsResponse.ok) {
+                throw new Error(`Error fetching directions: ${directionsResponse.status}`);
+            }
             const directionsData = await directionsResponse.json();
+            if (!directionsData.routes || directionsData.routes.length === 0) {
+                throw new Error('No route found between addresses');
+            }
 
             // Return duration in minutes
             return directionsData.routes[0].duration / 60;

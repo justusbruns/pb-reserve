@@ -1,4 +1,4 @@
-import { base } from './config';
+import { apiRequest } from '../../lib/client/apiClient';
 import type { EventFields } from '../../types/Event';
 import type { FieldSet, Records } from 'airtable';
 
@@ -51,44 +51,78 @@ export const eventService = {
    * Create a new event
    */
   create: async (fields: Partial<EventFields>) => {
-    const [record] = await base('Events').create([{ fields }]);
-    return record;
+    try {
+      return await apiRequest('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fields)
+      });
+    } catch (error) {
+      console.error('Error creating event:', error);
+      throw error;
+    }
   },
 
   /**
    * Get an event by ID
    */
   get: async (id: string) => {
-    return await base('Events').find(id);
+    try {
+      return await apiRequest(`/api/events/${id}`);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      throw error;
+    }
   },
 
   /**
    * Update an event
    */
   update: async (id: string, fields: Partial<EventFields>) => {
-    const [record] = await base('Events').update([{ id, fields }]);
-    return record;
+    try {
+      return await apiRequest(`/api/events/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fields)
+      });
+    } catch (error) {
+      console.error('Error updating event:', error);
+      throw error;
+    }
   },
 
   /**
    * Delete an event
    */
   delete: async (id: string) => {
-    const [record] = await base('Events').destroy([id]);
-    return record;
+    try {
+      return await apiRequest(`/api/events/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      throw error;
+    }
   },
 
   /**
    * List all events with optional filter formula
    */
   list: async (filterByFormula?: string): Promise<Records<FieldSet>> => {
-    const records = await base('Events')
-      .select({
-        filterByFormula,
-        sort: [{ field: 'Starts at', direction: 'desc' }]
-      })
-      .all();
-    return records;
+    try {
+      return await apiRequest('/api/events', {
+        params: {
+          filterByFormula
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      throw error;
+    }
   },
 
   /**
@@ -157,70 +191,13 @@ export const eventService = {
    */
   createComplete: async (input: CreateEventInput) => {
     try {
-      // 1. Create Organization
-      const organization = await organizationService.create({
-        'Name Organization': input.organization.name,
-        'VAT NR': input.organization.vatNumber,
-        'Address line 1': input.organization.addressLine1,
-        'Address line 2': input.organization.addressLine2,
-        'Postal code': input.organization.postalCode,
-        'City': input.organization.city,
-        'Country': input.organization.country
+      return await apiRequest('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(input)
       });
-
-      // 2. Create Location
-      const location = await locationService.create({
-        'Location name': input.location.name,
-        'Address line 1': input.location.addressLine1,
-        'Address line 2': input.location.addressLine2,
-        'Postal code': input.location.postalCode,
-        'City': input.location.city,
-        'Country': input.location.country
-      });
-
-      // 3. Create Contact Person
-      const contactPerson = await personService.create({
-        'Name': input.contactPerson.name,
-        'Email': input.contactPerson.email,
-        'Mobile number': input.contactPerson.mobileNumber,
-        'Type of person': 'Customer employee',
-        'Organizations': [organization.id]
-      });
-
-      // 4. Create Reservations
-      const reservations = await Promise.all([
-        // Default reservations
-        reservationService.create({ 'Order': 'Poem Booth 1' }),
-        reservationService.create({ 'Order': 'Transport' }),
-        // Optional reservations
-        ...(input.printOption ? [reservationService.create({ 'Order': 'Printer' })] : []),
-        ...(input.themeOption ? [reservationService.create({ 'Order': 'Theme' })] : []),
-        ...(input.brandingOption ? [reservationService.create({ 'Order': 'Branding' })] : [])
-      ]);
-
-      // 5. Finally, create the Event
-      const event = await eventService.create({
-        'Event name': input.event.name,
-        'Starts at': input.event.startAt,
-        'Stops at': input.event.endAt,
-        'Event created by': 'Online',
-        'Contact person': [contactPerson.id],
-        'Location': [location.id],
-        'Reserved by': [organization.id],
-        'Status': 'concept',
-        'Payment status': input.event.makeReservationFinal ? 'Invoice requested' : 'Proposal requested',
-        'Languages': input.event.languages,
-        // Link all reservations
-        'Reservations': reservations.map(r => r.id)
-      });
-
-      return {
-        event,
-        organization,
-        location,
-        contactPerson,
-        reservations
-      };
     } catch (error) {
       console.error('Error creating event:', error);
       throw error;
@@ -231,12 +208,11 @@ export const eventService = {
    * Get events from a specific view
    */
   async getFromView(viewName: string): Promise<Records<FieldSet>> {
-    const records = await base('Events')
-      .select({
-        view: viewName,
-        sort: [{ field: 'Starts at', direction: 'asc' }]
-      })
-      .all();
-    return records;
+    try {
+      return await apiRequest('/api/events');
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      throw error;
+    }
   }
 };

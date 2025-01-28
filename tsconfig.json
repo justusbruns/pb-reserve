@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "esnext",
@@ -11,15 +11,10 @@
     "strict": true,
     "noImplicitAny": true,
     "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "services/*": ["src/services/*"],
-      "types/*": ["src/types/*"]
-    },
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.svelte"]
+  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
 }

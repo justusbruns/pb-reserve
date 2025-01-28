@@ -1,28 +1,40 @@
 import Airtable from 'airtable';
 
-// Debug check for environment variables (will be removed after testing)
-console.log('Environment Variables Check:');
-console.log('VITE_AIRTABLE_BASE_ID:', import.meta.env.VITE_AIRTABLE_BASE_ID ? 'Set ' : 'Not set ');
-console.log('VITE_AIRTABLE_PAT:', import.meta.env.VITE_AIRTABLE_PAT ? 'Set ' : 'Not set ');
+let base: any = null;
 
-// Configure Airtable with Personal Access Token
-const AIRTABLE_BASE_ID = 'apphYtwSYRt7UDukL';  // Hardcoded for now until env var issue is fixed
+function initializeAirtable() {
+  if (!base && window.env?.AIRTABLE_PAT && window.env?.AIRTABLE_BASE_ID) {
+    base = new Airtable({
+      apiKey: window.env.AIRTABLE_PAT,
+      endpointUrl: 'https://api.airtable.com'
+    }).base(window.env.AIRTABLE_BASE_ID);
 
-const base = new Airtable({
-  apiKey: import.meta.env.VITE_AIRTABLE_PAT,
-  endpointUrl: 'https://api.airtable.com'
-}).base(AIRTABLE_BASE_ID);
-
-// Test API connection
-setTimeout(async () => {
-  try {
-    const testResult = await base('Reservations').select({ maxRecords: 1 }).firstPage();
-    console.log('Airtable connection test: Success ');
-    console.log('Using base ID:', AIRTABLE_BASE_ID);
-  } catch (error) {
-    console.error('Airtable connection test: Failed ');
-    console.error('Error details:', error.message);
+    // Test API connection
+    setTimeout(async () => {
+      try {
+        const testResult = await base('Reservations').select({ maxRecords: 1 }).firstPage();
+        console.log('Airtable connection test: Success');
+        console.log('Using base ID:', window.env.AIRTABLE_BASE_ID);
+      } catch (error) {
+        console.error('Airtable connection test: Failed');
+        console.error('Error details:', error.message);
+      }
+    }, 0);
   }
-}, 1000);
+  return base;
+}
 
-export { base };
+// Initialize when the module is imported
+if (typeof window !== 'undefined') {
+  // If window.env is already available, initialize immediately
+  if (window.env) {
+    initializeAirtable();
+  } else {
+    // Otherwise wait for DOMContentLoaded
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeAirtable();
+    });
+  }
+}
+
+export { base, initializeAirtable };

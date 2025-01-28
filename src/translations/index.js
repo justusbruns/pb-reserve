@@ -458,6 +458,11 @@ export default {
       poNumber: "PO nummer (optioneel)",
       poNumberPlaceholder: "Voer PO nummer in",
       submitBooking: "Verstuur Boeking",
+      deliveryAddress: "Afleveradres",
+      deliveryBusinessNamePlaceholder: "Voer bedrijfsnaam in (optioneel)",
+      deliveryStreetPlaceholder: "Voer straat en huisnummer in",
+      deliveryPostalCodePlaceholder: "Voer postcode in",
+      deliveryCityPlaceholder: "Voer plaats in",
       dimensions: {
         text: "Ik begrijp dat de Poem Booth door zijn omvang en gewicht niet via een trap kan worden vervoerd. Plaatsing op een verdieping is alleen mogelijk als er een ruime lift beschikbaar is. Daarnaast begrijp ik dat de lift minimaal 240 cm hoog, 220 cm diep en 90 cm breed moet zijn, en doorgangen minimaal 230 cm hoog en 80 cm breed. Twijfels? Neem gerust contact op via simon@poembooth.com."
       },
@@ -479,7 +484,7 @@ export default {
         eventDetails: "Evenement Details",
         personalInfo: "Persoonlijke Informatie",
         companyInfo: "Bedrijfsinformatie",
-        termsAndConditions: "Boekingsovereenkomst",
+        termsAndConditions: "Boekingsvoorwaarden",
         language: "Taalselectie"
       },
       validation: {
@@ -528,9 +533,12 @@ export default {
         retry: "Opnieuw proberen"
       },
       events: {
+        title: "Evenementen",
+        noEvents: "Geen evenementen gevonden",
         start: "Start",
         end: "Eind",
         location: "Locatie",
+        deliveryLocation: "Afleverlocatie",
         travelTime: "Reistijd",
         minutes: "minuten",
         availability: "Beschikbaarheid",
@@ -1005,6 +1013,11 @@ export default {
       poNumber: "PO number (optional)",
       poNumberPlaceholder: "Enter PO number",
       submitBooking: "Submit Booking",
+      deliveryAddress: "Delivery Address",
+      deliveryBusinessNamePlaceholder: "Enter business name (optional)",
+      deliveryStreetPlaceholder: "Enter street and house number",
+      deliveryPostalCodePlaceholder: "Enter postal code",
+      deliveryCityPlaceholder: "Enter city",
       dimensions: {
         text: "I understand that due to its size and weight, the Poem Booth cannot be transported via stairs. Installation on upper floors is only possible if a spacious elevator is available. Additionally, I understand that the elevator must be at least 240 cm high, 220 cm deep, and 90 cm wide, and passageways must be at least 230 cm high and 80 cm wide. Any doubts? Feel free to contact us at simon@poembooth.com."
       },
@@ -1075,9 +1088,12 @@ export default {
         retry: "Try again"
       },
       events: {
+        title: "Events",
+        noEvents: "No events found",
         start: "Start",
         end: "End",
         location: "Location",
+        deliveryLocation: "Delivery Location",
         travelTime: "Travel Time",
         minutes: "minutes",
         availability: "Availability",

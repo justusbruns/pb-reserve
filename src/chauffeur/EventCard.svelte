@@ -151,7 +151,7 @@
         </div>
         
         <div class="detail-row">
-            <div class="detail-label">{translations.chauffeur.events.location}:</div>
+            <div class="detail-label">{translations.chauffeur.events.deliveryLocation}:</div>
             <div class="detail-value">{event.fields.Location}</div>
         </div>
 

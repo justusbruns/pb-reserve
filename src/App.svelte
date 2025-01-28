@@ -10,7 +10,7 @@
   export let translations: Translations;
 
   // Function to determine the current language based on the URL
-  function getCurrentLanguage() {
+  function getCurrentLanguage(): string {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       return path.startsWith('/en') ? 'en' : 'nl';
@@ -27,7 +27,7 @@
     isLoading = false;
   });
 
-  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  const path = (typeof window !== 'undefined') ? window.location.pathname : '';
   const isChauffeurRoute = path.includes('/chauffeur');
 </script>
 

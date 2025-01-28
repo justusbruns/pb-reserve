@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  // Using the global mapboxgl instead of importing
-  const mapboxgl = window.mapboxgl;
+  import { onMount, onDestroy, getContext } from "svelte";
   import { fade, scale } from 'svelte/transition';
   import dateImage from '../images/Date.png?url';
   import locationImage from '../images/Location.png?url';
@@ -13,20 +11,17 @@
   import couponImage from '../images/Coupon.png?url';
   import speakerImage from '../images/Speaker.png?url';
   import pbLogo from '../images/Logo PB.png?url';
-  import { eventService } from '../services/airtable/eventService';
-  import { organizationService } from '../services/airtable/organizationService';
-  import { personService } from '../services/airtable/personService';
-  import { reservationsService } from '../services/airtable/reservationsService';
-  import { productService } from '../services/airtable/productService';
-  import { countryUtils } from '../services/airtable/utils';
   import type { EventFields } from 'types/Event';
   import { writable } from 'svelte/store';
   import { dateTimeUtils } from '../services/airtable/utils';
+  import { countryUtils } from '../services/airtable/utils';
   import flatpickr from 'flatpickr';
   import { Dutch } from 'flatpickr/dist/l10n/nl.js';
   import 'flatpickr/dist/flatpickr.css';
   import confetti from 'canvas-confetti';
   import type { Translations } from './types';
+  import { geocodeAddress, reverseGeocode } from '$lib/client/apiClient';
+  import MapboxGeocoder from '$lib/components/MapboxGeocoder.svelte';
 
   declare global {
     interface Window {
@@ -34,330 +29,56 @@
     }
   }
 
-  export let translations: Translations;
-  let currentLang = 'nl';
+  // Component props
+  const translations = getContext('translations');
+  const currentLang = translations?.locale || 'nl';
 
   function getTranslation(key) {
     if (!translations) {
-      console.log('No translations found');
+      console.warn('No translations found');
       return key;
     }
     
-    const parts = key.split('.');
-    let result = translations;
+    const keys = key.split('.');
+    let value = translations;
     
-    for (const part of parts) {
-      if (!result || typeof result[part] === 'undefined') {
-        console.log('Missing translation for part:', part, 'in path:', key);
+    for (const k of keys) {
+      if (!value || !value[k]) {
+        console.warn(`Translation missing for key: ${key}`);
         return key;
       }
-      result = result[part];
+      value = value[k];
     }
     
-    return result;
+    return value;
   }
 
-  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-  const AIRTABLE_API_KEY = import.meta.env.VITE_AIRTABLE_PAT;
-  const AIRTABLE_BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
-  
-  mapboxgl.accessToken = MAPBOX_TOKEN;
+  // Get context values
+  const mapboxToken = getContext('mapboxToken');
+  const apiToken = getContext('apiToken');
 
-  let className = "";
-  let startDate = "2025-01-15";
-  let startTime = "09:00";
-  let endDate = "2025-01-15";
-  let endTime = "17:00";
-  let eventName = ""; 
-  let totalPrice = 0;
-  let transportFee = 0;
-  let locationName = "";
-  let deliveryAddress = "";
-  let suggestions = [];
-  let distanceError = "";
-  let calculatedDistance = 0; 
-  let extrasPrice = 0;
-  let language = '';
-  let brandingAdded = false;
-  let themaAdded = false;
-  let getRoastedAdded = false;
-  let keynoteAdded = false;
-  let printOptionSelected = false;
-  let eventDays = 1;
-  let extrasList = [];
-  let selectedLanguages = [];
-  let selectedLanguage = 'Empty';
-  let currentPath = '';
-  const languagePrice = 125;
-  let primaryLanguage = "Dutch"; 
-  let isSubmitting = false;
-  let submitError = '';
-  let productIds = {
-    poemBooth: null,
-    eventPartner: null,
-    eventSpecialist: null,
-    extraLanguage: null,
-    branding: null,
-    theme: null,
-    printer: null,
-    roast: null,
-    transport: null,
-    keynote: null
-  };
-  let accountName = '';
-  let address = '';
-  let postalCode = '';
-  let city = '';
-  let country = ''; 
-  let vatNumber = '';
-  let contactName = '';
-  let email = '';
-  let emailError = '';
-  let contactPhone = '';
-  let invoiceContactEmail = '';
-  let invoiceEmailError = '';
-  let invoiceContactName = '';
-  let invoiceContactPhone = '';
-  let hasDifferentInvoiceContact = false;
-  let reservationType = 'info'; 
-  let originAddress = "Gedempt Hamerkanaal 111, 1021KP Amsterdam, The Netherlands";
-  let originCoordinates = [];
-  let isDefinitive = false;
-  let submitSuccess = false;
-  let poNumber = '';
-  let dateRangePicker;
-  let languageTranslations = {};
-  let couponCode = '';
-  let couponDiscount = 0;
-  let couponError = '';
-  let addressComponents = {
-    businessName: '',
-    street: '',
-    postalCode: '',
-    city: '',
-    country: ''
-  };
-  let deliveryBusinessName = '';
-  let deliveryStreet = '';
-  let deliveryPostalCode = '';
-  let deliveryCity = '';
-  let deliveryCountry = '';
-  let showAddressFields = false;
-  let selectedCoordinates = null;
-  let staticMapUrl = "";
-  let routeGeometry = null;
-  let isMapLoading = false;
-  let mapImageLoaded = false;
-  let termsAccepted = false;
-  let dimensionsAccepted = false;
-  let paymentAccepted = false;
-  let ageAccepted = false;
+  async function getOriginCoordinates() {
+    try {
+      if (!originAddress) {
+        console.warn('No origin address provided');
+        return;
+      }
 
-  // Local storage key for form data
-  const STORAGE_KEY = 'datum-en-tijd-form-data';
-
-  // Function to save form data to localStorage
-  function saveFormData() {
-    const formData = {
-      // Basic form fields
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      eventName,
-      locationName,
+      console.log('Fetching coordinates for address:', originAddress);
+      const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(originAddress)}.json?access_token=${mapboxToken}`);
+      const data = await response.json();
       
-      // Delivery address
-      deliveryAddress,
-      deliveryBusinessName,
-      deliveryStreet,
-      deliveryPostalCode,
-      deliveryCity,
-      deliveryCountry,
-      
-      // Language settings
-      language,
-      selectedLanguages,
-      selectedLanguage,
-      primaryLanguage,
-      
-      // Extras
-      brandingAdded,
-      themaAdded,
-      getRoastedAdded,
-      keynoteAdded,
-      printOptionSelected,
-      
-      // Pricing and calculations
-      transportFee,
-      extrasPrice,
-      extrasList,
-      totalPrice,
-      calculatedDistance,
-      
-      // Invoice address
-      invoiceAddressInput,
-      billingAddressComponents,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }
-
-  // Function to load form data from localStorage
-  function loadFormData() {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      
-      // Basic form fields
-      startDate = data.startDate;
-      startTime = data.startTime;
-      endDate = data.endDate;
-      endTime = data.endTime;
-      eventName = data.eventName;
-      locationName = data.locationName;
-      
-      // Delivery address
-      deliveryAddress = data.deliveryAddress;
-      deliveryBusinessName = data.deliveryBusinessName;
-      deliveryStreet = data.deliveryStreet;
-      deliveryPostalCode = data.deliveryPostalCode;
-      deliveryCity = data.deliveryCity;
-      deliveryCountry = data.deliveryCountry;
-      
-      // Language settings
-      language = data.language;
-      selectedLanguages = data.selectedLanguages;
-      selectedLanguage = data.selectedLanguage;
-      primaryLanguage = data.primaryLanguage;
-      
-      // Extras
-      brandingAdded = data.brandingAdded;
-      themaAdded = data.themaAdded;
-      getRoastedAdded = data.getRoastedAdded;
-      keynoteAdded = data.keynoteAdded;
-      printOptionSelected = data.printOptionSelected;
-      
-      // Pricing and calculations
-      transportFee = data.transportFee;
-      extrasPrice = data.extrasPrice;
-      extrasList = data.extrasList;
-      totalPrice = data.totalPrice;
-      calculatedDistance = data.calculatedDistance;
-      
-      // Invoice address
-      invoiceAddressInput = data.invoiceAddressInput;
-      billingAddressComponents = data.billingAddressComponents;
+      if (data && data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        console.log('Found origin coordinates:', [lng, lat]);
+        originCoordinates = [lng, lat];
+      } else {
+        console.warn('No features found in geocoding response for origin');
+      }
+    } catch (error) {
+      console.error('Error getting origin coordinates:', error);
     }
   }
-
-  // Clear form data from localStorage
-  function clearFormData() {
-    localStorage.removeItem(STORAGE_KEY);
-  }
-
-  $: formValidation = {
-    delivery: {
-      title: getTranslation('form.sections.deliveryAddress'),
-      isValid: () => deliveryStreet && deliveryPostalCode && deliveryCity && deliveryCountry
-    },
-    event: {
-      title: getTranslation('form.sections.eventDetails'),
-      isValid: () => eventName
-    },
-    language: {
-      title: getTranslation('form.sections.language'),
-      isValid: () => selectedLanguages.length > 0
-    },
-    personal: {
-      title: getTranslation('form.sections.personalInfo'),
-      isValid: () => contactName && email && validateEmail(email) && contactPhone
-    },
-    company: {
-      title: getTranslation('form.sections.companyInfo'),
-      isValid: () => accountName && address && postalCode && city && country
-    },
-    terms: {
-      title: getTranslation('form.sections.termsAndConditions'),
-      isValid: () => termsAccepted && dimensionsAccepted && paymentAccepted
-    }
-  };
-
-  $: isFormValid = Object.values(formValidation).every(section => section.isValid());
-
-  // Get all countries from translations
-  const getAllCountries = () => {
-    console.log('Translations:', translations);
-    console.log('Countries:', translations?.languages?.countries);
-    
-    if (!translations?.languages?.countries) {
-      console.error('No countries found in translations');
-      return [];
-    }
-
-    // Priority countries in desired order
-    const priorityCountries = [
-      'Netherlands',
-      'Belgium',
-      'Germany',
-      'France',
-      'Luxembourg'
-    ];
-
-    // Get all countries and sort them alphabetically
-    const otherCountries = Object.keys(translations.languages.countries)
-      .filter(country => !priorityCountries.includes(country))
-      .sort((a, b) => {
-        const aTranslated = translations.languages.countries[a] || a;
-        const bTranslated = translations.languages.countries[b] || b;
-        return aTranslated.localeCompare(bTranslated);
-      });
-
-    // Combine priority countries with other countries
-    return [...priorityCountries, ...otherCountries];
-  };
-
-  $: countries = getAllCountries();
-
-  const EU_COUNTRIES = [
-    'Netherlands',
-    'Belgium',
-    'Germany',
-    'Luxembourg',
-    'France',
-    'Austria',
-    'Bulgaria',
-    'Croatia',
-    'Cyprus',
-    'Czech Republic',
-    'Denmark',
-    'Estonia',
-    'Finland',
-    'Greece',
-    'Hungary',
-    'Ireland',
-    'Italy',
-    'Latvia',
-    'Lithuania',
-    'Malta',
-    'Poland',
-    'Portugal',
-    'Romania',
-    'Slovakia',
-    'Slovenia',
-    'Spain',
-    'Sweden'
-  ];
-
-  function getTranslatedCountry(countryCode) {
-    console.log('Translating country:', countryCode);
-    const translatedCountry = translations?.languages?.countries?.[countryCode];
-    console.log('Translated result:', translatedCountry);
-    return translatedCountry || countryCode;
-  }
-
-  $: isEUCountry = (selectedCountry) => {
-    return EU_COUNTRIES.includes(selectedCountry);
-  };
 
   onMount(async () => {
     try {
@@ -372,170 +93,66 @@
       // Initialize origin coordinates first
       try {
         console.log('Initializing origin coordinates...');
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            originAddress
-          )}.json?access_token=${MAPBOX_TOKEN}&types=address`
-        );
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.features && data.features.length > 0) {
-          originCoordinates = data.features[0].center;
-          console.log('Origin coordinates set:', originCoordinates);
-        } else {
-          throw new Error('No features found for origin address');
-        }
+        await getOriginCoordinates();
       } catch (error) {
         console.error('Error getting origin coordinates:', error);
         distanceError = getTranslation('errors.locationError');
         return;
       }
 
-      // Initialize Mapbox geocoder with a slight delay to ensure styles are loaded
-      setTimeout(() => {
-        if (window.MapboxGeocoder) {
-          const geocoder = new window.MapboxGeocoder({
-            accessToken: MAPBOX_TOKEN,
-            types: 'address',
-            language: currentPath.startsWith('/en') ? 'en' : 'nl',
-            placeholder: getTranslation('dateTime.address.search') || 'Zoek een adres'
-          });
-
-          // Add geocoder to the input element
-          const geocoderContainer = document.getElementById('geocoder');
-          if (geocoderContainer) {
-            geocoder.addTo(geocoderContainer);
-
-            // Apply styles directly to geocoder elements after adding to DOM
-            const geocoderInput = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder--input');
-            if (geocoderInput) {
-              Object.assign(geocoderInput.style, {
-                height: '50px',
-                border: 'none',
-                background: '#326334',
-                color: '#C9DA9A',
-                padding: '12px 16px',
-                fontFamily: '"Inter", sans-serif',
-                fontSize: '16px',
-                minHeight: '50px',
-                width: '100%',
-                margin: '0',
-                borderRadius: '7px'
-              });
-            }
-
-            const geocoderWrapper = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder');
-            if (geocoderWrapper) {
-              Object.assign(geocoderWrapper.style, {
-                width: '100%',
-                maxWidth: '100%',
-                boxShadow: 'none',
-                fontFamily: '"Inter", sans-serif',
-                border: 'none',
-                background: '#326334',
-                borderRadius: '7px',
-                minHeight: '50px',
-                margin: '0'
-              });
-            }
-
-            // Hide icons and buttons
-            const icons = geocoderContainer.querySelectorAll('.mapboxgl-ctrl-geocoder--icon');
-            icons.forEach(icon => icon.style.display = 'none');
-
-            const buttons = geocoderContainer.querySelectorAll('.mapboxgl-ctrl-geocoder--button');
-            buttons.forEach(button => button.style.display = 'none');
-
-            // Style suggestions
-            const suggestionsEl = geocoderContainer.querySelector('.mapboxgl-ctrl-geocoder--suggestions');
-            if (suggestionsEl) {
-              Object.assign(suggestionsEl.style, {
-                background: '#326334',
-                border: '2px solid #C9DA9A',
-                borderTop: 'none',
-                borderRadius: '0 0 7px 7px',
-                color: '#C9DA9A',
-                maxHeight: '200px'
-              });
-            }
-          }
-
-          // Listen for result selection
-          geocoder.on('result', (event) => {
-            handleAddressSelect(event);
-          });
-        }
-      }, 100); // Small delay to ensure styles are loaded
-
-      // Initialize datepicker
-      const dateInput = document.getElementById('date-range');
-      if (dateInput) {
-        dateRangePicker = flatpickr(dateInput, {
-          mode: 'range',
-          dateFormat: 'Y-m-d',
-          minDate: new Date().toISOString().split('T')[0],
-          onChange: ([startDate, endDate]) => {
-            if (startDate && endDate) {
-              const start = new Date(startDate);
-              const end = new Date(endDate);
-              const diffTime = Math.abs(end.getTime() - start.getTime());
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-              eventDays = diffDays;
-              totalPrice = calculateRentalPrice(diffDays);
-            }
-          }
-        });
-      }
-
-      // Get all product records
-      console.log('Fetching product records...');
-      
-      const poemBoothRecord = await productService.getByName('Poem Booth 1');
+      // Load product records
+      const poemBoothResponse = await fetch('/api/products/poem-booth-1');
+      const poemBoothRecord = await poemBoothResponse.json();
       console.log('Poem Booth record:', poemBoothRecord);
       
-      const eventPartnerRecord = await productService.getByName('EVENTPARTNER');
+      const eventPartnerResponse = await fetch('/api/products/eventpartner');
+      const eventPartnerRecord = await eventPartnerResponse.json();
       console.log('Event Partner record:', eventPartnerRecord);
       
-      const eventSpecialistRecord = await productService.getByName('EVENTSPECIALIST');
+      const eventSpecialistResponse = await fetch('/api/products/eventspecialist');
+      const eventSpecialistRecord = await eventSpecialistResponse.json();
       console.log('Event Specialist record:', eventSpecialistRecord);
       
-      const brandingRecord = await productService.getByName('Branding');
+      const brandingResponse = await fetch('/api/products/branding');
+      const brandingRecord = await brandingResponse.json();
       console.log('Branding record:', brandingRecord);
       
-      const themeRecord = await productService.getByName('Theme');
+      const themeResponse = await fetch('/api/products/theme');
+      const themeRecord = await themeResponse.json();
       console.log('Theme record:', themeRecord);
       
-      const standardPrinterRecord = await productService.getByName('Printer 1');
+      const standardPrinterResponse = await fetch('/api/products/printer-1');
+      const standardPrinterRecord = await standardPrinterResponse.json();
       console.log('Printer record:', standardPrinterRecord);
       
-      const roastRecord = await productService.getByName('Roast');
+      const roastResponse = await fetch('/api/products/roast');
+      const roastRecord = await roastResponse.json();
       console.log('Roast record:', roastRecord);
       
-      const transportRecord = await productService.getByName('Transport');
+      const transportResponse = await fetch('/api/products/transport');
+      const transportRecord = await transportResponse.json();
       console.log('Transport record:', transportRecord);
       
-      const languageRecord = await productService.getByName('Extra Language');
+      const languageResponse = await fetch('/api/products/extra-language');
+      const languageRecord = await languageResponse.json();
       console.log('Language record:', languageRecord);
 
-      const keynoteRecord = await productService.getByName('Keynote');
+      const keynoteResponse = await fetch('/api/products/keynote');
+      const keynoteRecord = await keynoteResponse.json();
       console.log('Keynote record:', keynoteRecord);
 
       // Store the record IDs
       productIds = {
-        poemBooth: poemBoothRecord?.id || null,
-        eventPartner: eventPartnerRecord?.id || null,
-        eventSpecialist: eventSpecialistRecord?.id || null,
-        extraLanguage: languageRecord?.id || null,
-        branding: brandingRecord?.id || null,
-        theme: themeRecord?.id || null,
-        printer: standardPrinterRecord?.id || null,
-        roast: roastRecord?.id || null,
-        transport: transportRecord?.id || null,
-        keynote: keynoteRecord?.id || null
+        poemBooth: poemBoothRecord?.id,
+        eventPartner: eventPartnerRecord?.id,
+        eventSpecialist: eventSpecialistRecord?.id,
+        extraLanguage: languageRecord?.id,
+        branding: brandingRecord?.id,
+        theme: themeRecord?.id,
+        printer: standardPrinterRecord?.id,
+        roast: roastRecord?.id,
+        transport: transportRecord?.id,
+        keynote: keynoteRecord?.id
       };
 
       console.log('Final Product IDs:', productIds);
@@ -564,14 +181,55 @@
 
       return () => {
         // Cleanup
-        if (geocoderContainer && geocoder) {
-          geocoderContainer.innerHTML = '';
+        if (geocoder) {
+          geocoder.destroy();
         }
       };
     } catch (error) {
       console.error('Error during initialization:', error);
       throw error;
     }
+  });
+
+  // Load form data from localStorage or API
+  async function loadFormData() {
+    if (typeof window === 'undefined') return; // Skip during SSR
+    try {
+      // First try to load from localStorage
+      const savedData = localStorage.getItem('formData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        Object.entries(parsedData).forEach(([key, value]) => {
+          if (key in window) {
+            window[key] = value;
+          }
+        });
+      }
+
+      // Then try to load from API if we have a reservation ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const reservationId = urlParams.get('id');
+      
+      if (reservationId) {
+        const response = await fetch(`/api/reservations/${reservationId}`);
+        if (response.ok) {
+          const apiData = await response.json();
+          // Update form fields with API data
+          Object.entries(apiData).forEach(([key, value]) => {
+            if (key in window) {
+              window[key] = value;
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading form data:', error);
+    }
+  }
+
+  // Load form data on mount
+  onMount(() => {
+    loadFormData();
   });
 
   // Watch for date/time changes
@@ -599,182 +257,93 @@
     }
   });
 
-  // Function to get origin coordinates
-  async function initializeMap() {
+  // Handle address search
+  async function handleAddressSearch() {
+    if (deliveryAddress.length > 2) {
+      try {
+        const data = await geocodeAddress(deliveryAddress, currentLang === 'en' ? 'en' : 'nl');
+        if (data && data.features) {
+          addressSuggestions = data.features.map(feature => ({
+            place_name: feature.place_name,
+            center: feature.center
+          }));
+        } else {
+          addressSuggestions = [];
+        }
+      } catch (error) {
+        console.error('Error searching address:', error);
+        addressSuggestions = [];
+      }
+    } else {
+      addressSuggestions = [];
+    }
+  }
+
+  // Handle address select
+  async function handleAddressSelect(result) {
     try {
-      // Get origin coordinates
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          originAddress
-        )}.json?access_token=${MAPBOX_TOKEN}`
+      console.log('Address selected:', result);
+      const { result: { context = [], place_name = '', center = [] } = {} } = result;
+      
+      // Extract address components
+      const street = result.result.text || '';
+      const number = result.result.address || '';
+      const postalCode = result.result.context.find(item => item.id.startsWith('postcode'))?.text || '';
+      const city = result.result.context.find(item => item.id.startsWith('place'))?.text || '';
+      const countryName = result.result.context.find(item => item.id.startsWith('country'))?.text || '';
+      
+      // Find the matching country in our list
+      const matchingCountry = countries.find(c => 
+        c.toLowerCase() === countryName.toLowerCase() ||
+        getTranslatedCountry(c).toLowerCase() === countryName.toLowerCase()
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Set the destination coordinates and update route
+      if (center?.length === 2) {
+        console.log('Setting destination coordinates:', center);
+        destinationCoordinates = [...center]; // Create a new array to ensure reactivity
+        await calculateDistance(center);
+      } else {
+        console.error('Invalid center coordinates:', center);
+        return;
       }
 
-      const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        originCoordinates = data.features[0].geometry.coordinates;
-      } else {
-        throw new Error('No coordinates found for origin address');
-      }
+      // Show address fields and populate them
+      showAddressFields = true;
+      deliveryStreet = `${street} ${number}`.trim();
+      deliveryPostalCode = postalCode;
+      deliveryCity = city;
+      deliveryCountry = matchingCountry || '';
     } catch (error) {
-      console.error('Error getting origin coordinates:', error);
-      distanceError = getTranslation('errors.locationError');
+      console.error('Error in handleAddressSelect:', error);
     }
   }
 
   // Function to submit to Airtable
   async function submitToAirtable(formData) {
     try {
-      console.log('Submitting to Airtable:', formData);  
+      console.log('Submitting form:', formData);  
 
-      // Create organization record first
-      const organizationFields = {
-        'Name organization': formData.accountName,
-        'Address': formData.address,
-        'Postal code': formData.postalCode,
-        'City': formData.city,
-        'Country': formData.country,
-        'VAT NR': formData.vatNumber,
-        'Email': formData.contactEmail,
-      };
-
-      const organization = await organizationService.create(organizationFields);
-
-      // Create main person record and link to main organization
-      const mainPerson = await personService.create({
-        'Name': formData.contactName,
-        'Email': formData.contactEmail,
-        'Mobile number': formData.contactPhone,
-        'Type of person': 'Customer employee',
-        'Organizations': [organization.id]
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiToken}`
+        },
+        body: JSON.stringify(formData)
       });
 
-      // Handle invoice contact person
-      let invoicePerson;
-      if (formData.hasDifferentInvoiceContact) {
-        // Create new person for invoice contact and link to invoice organization
-        invoicePerson = await personService.create({
-          'Name': formData.invoiceContactName,
-          'Email': formData.invoiceContactEmail,
-          'Mobile number': formData.invoiceContactPhone,
-          'Type of person': 'Customer employee',
-          'Organizations': [organization.id]
-        });
-      } else {
-        // Use main person as invoice person
-        invoicePerson = mainPerson;
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Form submission failed:', error);
+        throw new Error(error.error || 'Failed to submit form');
       }
 
-      // Format the complete address as a string
-      const completeAddress = [
-        deliveryBusinessName,
-        deliveryStreet,
-        [deliveryPostalCode, deliveryCity].filter(Boolean).join(' '),
-        deliveryCountry
-      ].filter(Boolean).join(', ');
-
-      // Create event with detailed order information
-      const eventRecord = await eventService.create({
-        'Event name': formData.eventName,
-        'Starts at': `${formData.startDate}T${formData.startTime}:00.000+01:00`,
-        'Stops at': `${formData.endDate}T${formData.endTime}:00.000+01:00`,
-        'Reserved by': [organization.id],
-        'Contact person': [mainPerson.id],
-        'Accounts payable clerk': [invoicePerson.id],
-        'Status': 'concept',
-        'Payment status': formData.makeReservationFinal ? 'Invoice requested' : 'Proposal requested',
-        'Languages': selectedLanguages.join(', '), // Convert array to comma-separated string
-        'PO number': formData.poNumber,
-        'Location': completeAddress,
-        'Total Distance (km)': calculatedDistance * (formData.startDate !== formData.endDate ? 4 : 2),
-        'Event created by': 'Online'
-      });
-
-      console.log('Created event:', eventRecord);  
-
-      // Create reservation records
-      const baseReservation = await reservationsService.create({
-        'Order': [productIds.poemBooth],  // Array of record IDs for linked records
-        'Event name': [eventRecord.id]    // Array of record IDs
-      });
-
-      // Create EVENTPARTNER or EVENTSPECIALIST reservation based on discount
-      if (formData.couponCode === 'EVENTPARTNER' && productIds.eventPartner) {
-        await reservationsService.create({
-          'Order': [productIds.eventPartner],  // Array of record IDs for linked records
-          'Event name': [eventRecord.id]       // Array of record IDs
-        });
-      } else if (formData.couponCode === 'EVENTSPECIALIST' && productIds.eventSpecialist) {
-        await reservationsService.create({
-          'Order': [productIds.eventSpecialist],  // Array of record IDs for linked records
-          'Event name': [eventRecord.id]          // Array of record IDs
-        });
-      }
-
-      // Create reservations for each selected product
-      if (formData.brandingAdded && productIds.branding) {
-        await reservationsService.create({
-          'Order': [productIds.branding],  // Array of record IDs for linked records
-          'Event name': [eventRecord.id]   // Array of record IDs
-        });
-      }
-
-      if (formData.themaAdded && productIds.theme) {
-        await reservationsService.create({
-          'Order': [productIds.theme],     // Array of record IDs for linked records
-          'Event name': [eventRecord.id]   // Array of record IDs
-        });
-      }
-
-      if (formData.printOptionSelected && productIds.printer) {
-        console.log('Creating printer reservation with ID:', productIds.printer);
-        await reservationsService.create({
-          'Order': [productIds.printer],   // Array of record IDs for linked records
-          'Event name': [eventRecord.id]   // Array of record IDs
-        });
-      }
-
-      if (formData.getRoastedAdded && productIds.roast) {
-        console.log('Creating Roast reservation with ID:', productIds.roast);
-        await reservationsService.create({
-          'Order': [productIds.roast],     // Array of record IDs for linked records
-          'Event name': [eventRecord.id]   // Array of record IDs
-        });
-      }
-
-      if (formData.keynoteAdded && productIds.keynote) {
-        console.log('Creating Keynote reservation with ID:', productIds.keynote);
-        await reservationsService.create({
-          'Order': [productIds.keynote],     // Array of record IDs for linked records
-          'Event name': [eventRecord.id]     // Array of record IDs for linked event
-        });
-      }
-
-      if (formData.transportFee > 0 && productIds.transport) {
-        await reservationsService.create({
-          'Order': [productIds.transport], // Array of record IDs for linked records
-          'Event name': [eventRecord.id]   // Array of record IDs
-        });
-      }
-
-      // Create reservations for additional languages (excluding the first language)
-      if (selectedLanguages.length > 1 && productIds.extraLanguage) {
-        console.log('Creating Extra Language reservations for:', selectedLanguages.slice(1));
-        for (let i = 1; i < selectedLanguages.length; i++) {
-          await reservationsService.create({
-            'Order': [productIds.extraLanguage],  // Array of record IDs for linked records
-            'Event name': [eventRecord.id]        // Array of record IDs
-          });
-        }
-      }
-
-      console.log('Airtable response:', { organization, event: eventRecord });  
-      return { organization, event: eventRecord };
+      const result = await response.json();
+      console.log('Form submission complete:', result);
+      return result;
     } catch (error) {
-      console.error('Error submitting to Airtable:', error);
+      console.error('Error submitting form:', error);
       throw error;
     }
   }
@@ -841,36 +410,21 @@
     
     if (deliveryAddress.length > 2) {
       try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            deliveryAddress
-          )}.json?access_token=${MAPBOX_TOKEN}&language=${currentLang === 'en' ? 'en' : 'nl'}&types=address,place`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.features) {
-          suggestions = data.features.map(feature => ({
-            text: feature.place_name,
-            coordinates: feature.geometry.coordinates,
-            context: feature.context || []
-          }));
-        } else {
-          suggestions = [];
-        }
+        const data = await geocodeAddress(deliveryAddress, currentLang === 'en' ? 'en' : 'nl');
+        console.log('Geocoding response:', data);
+        addressSuggestions = data.features;
       } catch (error) {
-        console.error('Error fetching address suggestions:', error);
-        suggestions = [];
+        console.error('Error fetching suggestions:', error);
+        addressSuggestions = [];
       }
     } else {
-      suggestions = [];
+      addressSuggestions = [];
     }
   }
 
   async function selectAddress(suggestion: { text: string, coordinates: [number, number], context: any[] }) {
     deliveryAddress = suggestion.text;
-    suggestions = [];
+    addressSuggestions = [];
 
     // Extract country from context if available
     const countryContext = suggestion.context?.find(item => item.id.startsWith('country'));
@@ -889,152 +443,8 @@
     await calculateTransportFee();
   }
 
-  async function handleAddressSelect(result) {
-    const { result: { context = [], place_name = '', center = [] } = {} } = result;
-    
-    // Extract country from context
-    const countryName = result.result.context.find(item => item.id.startsWith('country'))?.text;
-    
-    // Find the matching country in our list
-    const matchingCountry = countries.find(c => getTranslatedCountry(c) === countryName);
-    
-    // Set the selected coordinates for the map
-    selectedCoordinates = center;
-    
-    // Extract address components
-    const streetNumber = result.result.address || '';
-    const streetName = result.result.text || '';
-    const postcodeContext = context.find(item => item.id.startsWith('postcode'))?.text || '';
-    const cityContext = context.find(item => item.id.startsWith('place'))?.text || '';
-    
-    // Update delivery address fields
-    deliveryStreet = `${streetName} ${streetNumber}`.trim();
-    deliveryPostalCode = postcodeContext;
-    deliveryCity = cityContext;
-    if (matchingCountry) deliveryCountry = matchingCountry;
-
-    // Show the address fields after selection
-    showAddressFields = true;
-    
-    // Calculate distance if coordinates are available
-    if (center && center.length === 2) {
-      await calculateDistance(center);
-    }
-
-    // Save form data after address is selected
-    saveFormData();
-  }
-
-  function decodeGeometry(str) {
-    const coordinates = [];
-    let index = 0;
-    let lat = 0;
-    let lng = 0;
-    let shift = 0;
-    let result = 0;
-    let byte = null;
-    let latitude_change;
-    let longitude_change;
-    const factor = Math.pow(10, 5);
-
-    // Coordinates have variable length when encoded, so just keep
-    // track of whether we've hit the end of the string. In each
-    // loop iteration, a single coordinate is decoded.
-    while (index < str.length) {
-      // Reset shift, result, and byte
-      byte = null;
-      shift = 0;
-      result = 0;
-
-      do {
-        byte = str.charCodeAt(index++) - 63;
-        result |= (byte & 0x1f) << shift;
-        shift += 5;
-      } while (byte >= 0x20);
-
-      latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
-
-      shift = result = 0;
-
-      do {
-        byte = str.charCodeAt(index++) - 63;
-        result |= (byte & 0x1f) << shift;
-        shift += 5;
-      } while (byte >= 0x20);
-
-      longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
-
-      lat += latitude_change;
-      lng += longitude_change;
-
-      coordinates.push([lng / factor, lat / factor]);
-    }
-
-    return coordinates;
-  }
-
-  function generateStaticMapUrl(origin, destination) {
-    isMapLoading = true;
-    mapImageLoaded = false;
-    
-    if (!origin || !destination || origin.length !== 2 || destination.length !== 2 || !routeGeometry) {
-      console.log('Invalid coordinates or route geometry for map:', { origin, destination, hasGeometry: !!routeGeometry });
-      return "";
-    }
-    
-    const [originLng, originLat] = origin;
-    const [destLng, destLat] = destination;
-    
-    // Decode the route geometry to get all coordinates
-    const coordinates = decodeGeometry(routeGeometry);
-    
-    // Calculate bounding box from all route coordinates
-    const lngs = coordinates.map(coord => coord[0]);
-    const lats = coordinates.map(coord => coord[1]);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    
-    // Add padding to the bounds
-    const padding = 0.2; // Increased padding to 20%
-    const bbox = [
-      minLng - (maxLng - minLng) * padding,
-      minLat - (maxLat - minLat) * padding,
-      maxLng + (maxLng - minLng) * padding,
-      maxLat + (maxLat - minLat) * padding
-    ].join(',');
-    
-    // Create GeoJSON with the actual route coordinates
-    const geojson = {
-      type: "Feature",
-      properties: {
-        "stroke": "#326334",
-        "stroke-width": 5
-      },
-      geometry: {
-        type: "LineString",
-        coordinates: coordinates
-      }
-    };
-    
-    console.log('Map coordinates:', {
-      origin: [originLng, originLat],
-      destination: [destLng, destLat],
-      routePoints: coordinates.length,
-      bbox
-    });
-    
-    // Use the actual route geometry in the URL with cache busting
-    const timestamp = Date.now();
-    const url = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/geojson(${encodeURIComponent(JSON.stringify(geojson))}),pin-s-warehouse+326334(${originLng},${originLat}),pin-s-car+326334(${destLng},${destLat})/[${bbox}]/500x400@2x?access_token=${MAPBOX_TOKEN}&style_filter=[{"id":"background","color":"#F0F9D5"},{"id":"water","color":"#C9DA9A"},{"id":"road","color":"#326334"},{"id":"road-secondary-tertiary","color":"#326334"},{"id":"road-primary","color":"#326334"}]&t=${timestamp}`;
-    
-    console.log('Generated map URL:', url);
-    return url;
-  }
-
   async function calculateDistance(coordinates) {
-    if (!originCoordinates || originCoordinates.length === 0) {
+    if (!originCoordinates?.length || originCoordinates.length === 0) {
       console.error('Origin coordinates not set');
       calculatedDistance = 0;
       transportFee = 0;
@@ -1046,36 +456,39 @@
     try {
       const [lng, lat] = coordinates;
       selectedCoordinates = [lng, lat];
-      const directionsResponse = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoordinates[0]},${originCoordinates[1]};${lng},${lat}?geometries=polyline&access_token=${MAPBOX_TOKEN}`
+      
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoordinates[0]},${originCoordinates[1]};${lng},${lat}?geometries=geojson&access_token=${mapboxToken}`
       );
 
-      if (!directionsResponse.ok) {
-        throw new Error(`HTTP error! status: ${directionsResponse.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const directionsData = await directionsResponse.json();
+      const data = await response.json();
       
-      if (directionsData.routes && directionsData.routes.length > 0) {
-        calculatedDistance = Math.round(directionsData.routes[0].distance / 1000); // Convert to km and round
-        routeGeometry = directionsData.routes[0].geometry; // Store the route geometry
+      if (data.routes && data.routes[0]) {
+        // Distance is in meters, convert to kilometers
+        calculatedDistance = Math.round(data.routes[0].distance / 1000);
+        routeGeometry = data.routes[0].geometry;
         console.log('Calculated distance:', calculatedDistance, 'km');
+
+        // Calculate transport fee
+        await calculateTransportFee();
         
-        if (calculatedDistance > 300) {
-          calculatedDistance = calculatedDistance; // Keep the actual distance
-          transportFee = 0;
-          staticMapUrl = ""; // Clear map URL if distance too far
-          routeGeometry = null;
-          console.log('Distance too far:', calculatedDistance, 'km');
-        } else {
-          staticMapUrl = generateStaticMapUrl(originCoordinates, selectedCoordinates);
-          await calculateTransportFee();
-        }
+        // Update map with route
+        await updateRouteVisualization();
       } else {
-        throw new Error('No routes found');
+        console.error('No route found in response:', data);
+        distanceError = 'Could not calculate distance';
+        calculatedDistance = 0;
+        transportFee = 0;
+        staticMapUrl = "";
+        routeGeometry = null;
       }
     } catch (error) {
       console.error('Error calculating distance:', error);
+      distanceError = 'Error calculating distance';
       calculatedDistance = 0;
       transportFee = 0;
       staticMapUrl = "";
@@ -1083,13 +496,23 @@
     }
   }
 
+  // Calculate transport fee based on distance
   async function calculateTransportFee() {
-    if (calculatedDistance === 0 || distanceError) {
+    if (calculatedDistance <= 0) {
       transportFee = 0;
       return;
     }
-    // Calculate transport fee based on distance and event duration
-    transportFee = calculatedDistance * (eventDays > 1 ? 4 : 2);
+
+    if (calculatedDistance <= 30) {
+      transportFee = 0; // Free within 30km
+    } else if (calculatedDistance <= 100) {
+      transportFee = Math.ceil((calculatedDistance - 30) * 2); // €2 per km after 30km
+    } else {
+      transportFee = Math.ceil((70 * 2) + ((calculatedDistance - 100) * 1.5)); // €2/km up to 100km, then €1.50/km
+    }
+
+    console.log('Transport fee:', transportFee);
+    calculateTotalPrice();
   }
 
   // Update transport fee when event days change
@@ -1284,8 +707,8 @@
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
-      // Base price is €950 per day
-      let basePrice = 950 * diffDays;
+      // Base price calculation using poem booth pricing
+      const basePrice = calculatePoemBoothPrice(diffDays);
       
       // Add transport fee if applicable
       let totalTransport = transportFee || 0;
@@ -1307,6 +730,7 @@
     }
   }
 
+  // Calculate poem booth price based on number of days
   function calculatePoemBoothPrice(days: number): number {
     if (days <= 0) return 0;
     if (days === 1) return 950;  // First day
@@ -1323,70 +747,12 @@
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 
-  // Invoice Address Handling
-  let invoiceAddressInput = '';
-  let invoiceAddressSuggestions = [];
-  let billingAddressComponents = null;
-
-  async function handleInvoiceAddressInput(event: Event) {
-    const input = (event.target as HTMLInputElement).value;
-    invoiceAddressInput = input;
-    
-    if (input.length > 2) {
-      try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            input
-          )}.json?access_token=${MAPBOX_TOKEN}&language=${currentLang === 'en' ? 'en' : 'nl'}&types=address,place,country&limit=5`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('Mapbox response:', data);
-        invoiceAddressSuggestions = data.features;
-      } catch (error) {
-        console.error('Error fetching suggestions:', error);
-        invoiceAddressSuggestions = [];
-      }
-    } else {
-      invoiceAddressSuggestions = [];
-    }
-  }
-
-  function selectInvoiceAddress(suggestion: any) {
-    console.log('Selected suggestion:', suggestion);
-    invoiceAddressInput = suggestion.place_name;
-    invoiceAddressSuggestions = [];
-    try {
-      billingAddressComponents = getAddressComponents(invoiceAddressInput);
-      console.log('Billing address components:', billingAddressComponents);
-      console.log('Is EU country?', isEUCountry(billingAddressComponents?.country));
-      console.log('Is Netherlands?', billingAddressComponents?.country === 'Nederland');
-    } catch (error) {
-      console.error('Error parsing invoice address:', error);
-      billingAddressComponents = null;
-    }
-  }
-
-  // Update billing components when invoice address changes
   $: {
-    if (invoiceAddressInput) {
-      try {
-        console.log('Raw invoice address:', invoiceAddressInput);
-        billingAddressComponents = getAddressComponents(invoiceAddressInput);
-        console.log('Billing address components:', billingAddressComponents);
-        console.log('Country (raw):', billingAddressComponents.country);
-        console.log('Is EU country?', isEUCountry(billingAddressComponents.country));
-        console.log('Is Netherlands?', billingAddressComponents.country === 'Nederland');
-        console.log('Should show VAT field?', 
-          isEUCountry(billingAddressComponents.country) && 
-          billingAddressComponents.country !== 'Nederland'
-        );
-      } catch (error) {
-        console.error('Error parsing invoice address:', error);
-        billingAddressComponents = null;
-      }
+    if (startDate && endDate && startTime && endTime) {
+      const start = new Date(`${startDate}T${startTime}`);
+      const end = new Date(`${endDate}T${endTime}`);
+      const days = calculateEventDays(startDate, endDate);
+      totalPrice = calculateRentalPrice(days);
     }
   }
 
@@ -1456,52 +822,150 @@
   $: vatAmountAfterDiscount = priceBeforeVat * 0.21;
   $: totalPriceWithDiscountInclVat = priceBeforeVat + vatAmountAfterDiscount;
 
+  // Form validation
+  let formValidation = {
+    event: {
+      isValid: () => eventName && startDate && endDate && startTime && endTime,
+    },
+    organization: {
+      isValid: () => accountName && address && postalCode && city && country,
+    },
+    contact: {
+      isValid: () => contactName && email && contactPhone && validateEmail(email) && validatePhone(contactPhone),
+    },
+    delivery: {
+      isValid: () => deliveryStreet && deliveryPostalCode && deliveryCity && deliveryCountry,
+    }
+  };
+
+  function isFormValid(): boolean {
+    // Required fields validation
+    const requiredFieldsValid = !!(
+      startDate && 
+      startTime && 
+      endDate && 
+      endTime && 
+      eventName &&
+      deliveryStreet &&
+      deliveryPostalCode &&
+      deliveryCity &&
+      deliveryCountry &&
+      accountName &&
+      address &&
+      postalCode &&
+      city &&
+      country &&
+      contactName &&
+      email &&
+      contactPhone &&
+      validatePhone(contactPhone) &&
+      validateEmail(email)
+    );
+
+    // Invoice contact validation
+    const invoiceContactValid = !hasDifferentInvoiceContact || !!(
+      invoiceContactName &&
+      invoiceContactEmail &&
+      invoiceContactPhone
+    );
+
+    // Terms acceptance validation
+    const termsValid = !!(
+      termsAccepted &&
+      dimensionsAccepted &&
+      paymentAccepted &&
+      ageAccepted
+    );
+
+    // Email format validation
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const invoiceEmailValid = !hasDifferentInvoiceContact || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceContactEmail);
+
+    // Return overall form validity
+    return (
+      requiredFieldsValid &&
+      invoiceContactValid &&
+      termsValid &&
+      emailValid &&
+      invoiceEmailValid &&
+      !distanceError && // No distance calculation errors
+      !emailError && // No email validation errors
+      !invoiceEmailError && // No invoice email validation errors
+      !phoneError // No phone validation errors
+    );
+  }
+
+  // Watch for changes in form fields and validate
+  $: {
+    if (email) {
+      emailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Invalid email format';
+    }
+    if (invoiceContactEmail && hasDifferentInvoiceContact) {
+      invoiceEmailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceContactEmail) ? '' : 'Invalid email format';
+    }
+    if (contactPhone) {
+      phoneError = validatePhone(contactPhone) ? '' : 'Invalid phone number';
+    }
+  }
+
   // Handle form submission
   async function handleSubmit(event) {
     event.preventDefault();
     isSubmitting = true;
     
     try {
+      // Validate required fields
+      if (!eventName || !startDate || !endDate || !accountName || !email || !contactPhone ||
+          !address || !postalCode || !city || !country ||
+          !deliveryStreet || !deliveryPostalCode || !deliveryCity || !deliveryCountry ||
+          !destinationCoordinates) {
+        throw new Error('Please fill in all required fields');
+      }
+
       const formData = {
+        // Event details
+        eventName,
+        startDate,
+        endDate,
+        eventDays,
+        
+        // Company details
         accountName,
+        email,
+        phone: contactPhone,
+        
+        // Company address
         address,
         postalCode,
         city,
         country,
-        vatNumber,
-        contactName,
-        contactEmail: email,
-        contactPhone,
-        eventName,
-        startDate,
-        endDate,
-        startTime,
-        endTime,
-        selectedLanguages,
-        brandingAdded,
-        themaAdded,
-        printOptionSelected,
-        getRoastedAdded,
-        keynoteAdded,
-        transportFee,
-        totalPrice: totalPrice + transportFee + extrasPrice - couponDiscount,
-        organizationId: null,
-        makeReservationFinal: true,
-        deliveryAddress,
-        couponCode,
+        
+        // Delivery address
         deliveryBusinessName,
         deliveryStreet,
         deliveryPostalCode,
         deliveryCity,
-        deliveryCountry
+        deliveryCountry,
+        destinationCoordinates: destinationCoordinates.join(','),
+        
+        // Pricing and options
+        calculatedDistance,
+        transportFee,
+        totalPrice,
+        selectedLanguages: selectedLanguages.join(','),
+        printOption: printOption || false,
+        couponCode: couponCode || ''
       };
 
+      console.log('Form data prepared:', formData);
+
       await submitToAirtable(formData);
+      console.log('Form submitted successfully');
       submitSuccess = true;
       triggerSuccessAnimation();
       clearFormData(); // Clear saved data after successful submission
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error in form submission:', error);
       submitError = getTranslation('errors.submitError');
     } finally {
       isSubmitting = false;
@@ -1537,13 +1001,501 @@
   // Save form data whenever relevant values change
   $: {
     if (startDate || endDate || startTime || endTime || eventName || locationName || 
-        deliveryAddress || deliveryBusinessName || deliveryStreet || deliveryPostalCode || deliveryCity || deliveryCountry ||  // Added all delivery fields
+        deliveryAddress || deliveryBusinessName || deliveryStreet || deliveryPostalCode || deliveryCity || deliveryCountry || 
         language || brandingAdded || themaAdded || getRoastedAdded || 
         keynoteAdded || printOptionSelected || selectedLanguages.length || selectedLanguage ||
         transportFee || extrasPrice || extrasList.length || totalPrice || calculatedDistance ||
         invoiceAddressInput) {
       saveFormData();
     }
+  }
+
+  // Form data handling
+  async function saveFormData() {
+    if (typeof window === 'undefined') return; // Skip during SSR
+    try {
+      const formData = {
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        eventName,
+        totalPrice,
+        transportFee,
+        locationName,
+        deliveryBusinessName,
+        deliveryStreet,
+        deliveryPostalCode,
+        deliveryCity,
+        deliveryCountry,
+        calculatedDistance,
+        extrasPrice,
+        language,
+        brandingAdded,
+        themaAdded,
+        getRoastedAdded,
+        keynoteAdded,
+        printOptionSelected,
+        eventDays,
+        extrasList,
+        selectedLanguages,
+        primaryLanguage,
+        productIds,
+      };
+
+      // Save to local storage
+      localStorage.setItem('formData', JSON.stringify(formData));
+      
+      // If this is a final submission, send to server
+      if (isSubmitting) {
+        const response = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to submit form');
+        }
+
+        submitSuccess = true;
+        isSubmitting = false;
+      }
+    } catch (error) {
+      console.error('Error saving form data:', error);
+      submitError = error.message;
+      isSubmitting = false;
+    }
+  }
+
+  // Clear form data
+  async function clearFormData() {
+    if (typeof window === 'undefined') return; // Skip during SSR
+    try {
+      localStorage.removeItem('formData');
+    } catch (error) {
+      console.error('Error clearing form data:', error);
+    }
+  }
+
+  // Country translations
+  const countryTranslations = {
+    en: {
+      'Netherlands': 'Netherlands',
+      'Belgium': 'Belgium',
+      'Germany': 'Germany',
+      'France': 'France',
+      'Austria': 'Austria',
+      'Bulgaria': 'Bulgaria',
+      'Croatia': 'Croatia',
+      'Cyprus': 'Cyprus',
+      'Czech Republic': 'Czech Republic',
+      'Denmark': 'Denmark',
+      'Estonia': 'Estonia',
+      'Finland': 'Finland',
+      'Greece': 'Greece',
+      'Hungary': 'Hungary',
+      'Ireland': 'Ireland',
+      'Italy': 'Italy',
+      'Latvia': 'Latvia',
+      'Lithuania': 'Lithuania',
+      'Luxembourg': 'Luxembourg',
+      'Malta': 'Malta',
+      'Netherlands': 'Netherlands',
+      'Poland': 'Poland',
+      'Portugal': 'Portugal',
+      'Romania': 'Romania',
+      'Slovakia': 'Slovakia',
+      'Slovenia': 'Slovenia',
+      'Spain': 'Spain',
+      'Sweden': 'Sweden',
+      'United Kingdom': 'United Kingdom',
+      'Switzerland': 'Switzerland',
+      'Norway': 'Norway'
+    },
+    nl: {
+      'Netherlands': 'Nederland',
+      'Belgium': 'België',
+      'Germany': 'Duitsland',
+      'France': 'Frankrijk',
+      'Austria': 'Oostenrijk',
+      'Bulgaria': 'Bulgarije',
+      'Croatia': 'Kroatië',
+      'Cyprus': 'Cyprus',
+      'Czech Republic': 'Tsjechië',
+      'Denmark': 'Denemarken',
+      'Estonia': 'Estland',
+      'Finland': 'Finland',
+      'Greece': 'Griekenland',
+      'Hungary': 'Hongarije',
+      'Ireland': 'Ierland',
+      'Italy': 'Italië',
+      'Latvia': 'Letland',
+      'Lithuania': 'Litouwen',
+      'Luxembourg': 'Luxemburg',
+      'Malta': 'Malta',
+      'Poland': 'Polen',
+      'Portugal': 'Portugal',
+      'Romania': 'Roemenië',
+      'Slovakia': 'Slowakije',
+      'Slovenia': 'Slovenië',
+      'Spain': 'Spanje',
+      'Sweden': 'Zweden',
+      'United Kingdom': 'Verenigd Koninkrijk',
+      'Switzerland': 'Zwitserland',
+      'Norway': 'Noorwegen'
+    }
+  };
+
+  // Get translated country name based on current language
+  function getTranslatedCountry(country: string): string {
+    const lang = currentLang || 'en';
+    return countryTranslations[lang]?.[country] || country;
+  }
+
+  // Countries list for dropdowns
+  const countries = [
+    'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic',
+    'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary',
+    'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands',
+    'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
+    'United Kingdom', 'Switzerland', 'Norway'
+  ];
+
+  // EU Countries list
+  const euCountries = [
+    'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic',
+    'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary',
+    'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands',
+    'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden'
+  ];
+
+  // Check if a country is in the EU
+  function isEUCountry(countryName: string): boolean {
+    return euCountries.includes(countryName);
+  }
+
+  // Form visibility state
+  let showDeliveryFields = false;
+  let showInvoiceFields = false;
+  let showPricingDetails = false;
+  let showTermsAndConditions = false;
+  let showLanguageSelector = false;
+  let showExtrasSelector = false;
+
+  // Form variables
+  let className = "";
+  let startDate = "2025-01-15";
+  let startTime = "09:00";
+  let endDate = "2025-01-15";
+  let endTime = "17:00";
+  let eventName = ""; 
+  let basePrice = 1500;
+  let languagePrice = 250; // Price per additional language
+  let brandingPrice = 500;
+  let themaPrice = 300;
+  let getRoastedPrice = 400;
+  let keynotePrice = 750;
+  let printPrice = 250;
+  let totalPrice = 0;
+  let extrasPrice = 0;
+  let couponDiscount = 0;
+
+  let locationName = "";
+  let suggestions = [];
+  let language = '';
+  let brandingAdded = false;
+  let themaAdded = false;
+  let getRoastedAdded = false;
+  let keynoteAdded = false;
+  let printOptionSelected = false;
+  let eventDays = 1;
+  let extrasList = [];
+  let selectedLanguages = [];
+  let selectedLanguage = 'Empty';
+  let currentPath = '';
+  let primaryLanguage = "Dutch";
+  let isSubmitting = false;
+  let submitError = '';
+  let productIds = {
+    poemBooth: 'recPoEmBoOtH123',        // Base product
+    eventPartner: 'recEvTpArTnEr456',     // Event partner
+    eventSpecialist: 'recEvTsPeC789',     // Event specialist
+    extraLanguage: 'recExTrAlAnG012',     // Additional language
+    branding: 'recBrAnDiNg345',          // Branding
+    theme: 'recThEmE678',                // Theme
+    printer: 'recPrInTeR901',            // Printer
+    roast: 'recRoAsT234',                // Roast
+    transport: 'recTrAnSpOrT567',        // Transport
+    keynote: 'recKeYnOtE890'             // Keynote
+  };
+
+  // Delivery address fields
+  let deliveryBusinessName = '';
+  let deliveryStreet = '';
+  let deliveryPostalCode = '';
+  let deliveryCity = '';
+  let deliveryCountry = '';
+
+  // Company and contact info
+  let accountName = '';
+  let address = '';
+  let postalCode = '';
+  let city = '';
+  let country = ''; 
+  let vatNumber = '';
+  let contactName = '';
+  let email = '';
+  let emailError = '';
+  let contactPhone = '';
+  let phoneError = '';
+  let invoiceContactEmail = '';
+  let invoiceEmailError = '';
+  let invoiceContactName = '';
+  let invoiceContactPhone = '';
+  let hasDifferentInvoiceContact = false;
+  let reservationType = 'info';
+  let isDefinitive = false;
+  let submitSuccess = false;
+  let poNumber = '';
+  let dateRangePicker;
+  let languageTranslations = {};
+  let couponCode = '';
+  let couponError = '';
+
+  // Address components
+  let addressComponents = {
+    businessName: '',
+    street: '',
+    postalCode: '',
+    city: '',
+    country: ''
+  };
+
+  // Terms and conditions
+  let termsAccepted = false;
+  let dimensionsAccepted = false;
+  let paymentAccepted = false;
+  let ageAccepted = false;
+
+  // Invoice address
+  let invoiceAddressInput = '';
+  let billingAddressComponents = {
+    businessName: '',
+    street: '',
+    postalCode: '',
+    city: '',
+    country: ''
+  };
+
+  // Map related state
+  let staticMapUrl = '';
+  let isMapLoading = false;
+  let mapImageLoaded = false;
+  let showAddressFields = false;
+  let destinationCoordinates = [];
+  let originCoordinates = [];
+  let originAddress = 'Gedempt Hamerkanaal 111, 1021KP Amsterdam, The Netherlands';
+  let selectedCoordinates = [];
+  let distanceError = '';
+  let routeGeometry = null;
+  
+  // Distance and transport fee calculations
+  let calculatedDistance = 0;
+  let transportFee = 0;
+
+  // Function to update route visualization
+  async function updateRouteVisualization() {
+    try {
+      if (!originCoordinates?.length || originCoordinates.length === 0) {
+        console.warn('Missing coordinates for route visualization:', { originCoordinates, destinationCoordinates });
+        return;
+      }
+
+      console.log('Getting route between:', { origin: originCoordinates, destination: destinationCoordinates });
+      
+      // Get the route between origin and destination
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoordinates[0]},${originCoordinates[1]};${destinationCoordinates[0]},${destinationCoordinates[1]}?geometries=geojson&access_token=${mapboxToken}`
+      );
+      
+      const routeData = await response.json();
+      console.log('Route data:', routeData);
+
+      if (routeData.routes && routeData.routes[0]) {
+        const route = routeData.routes[0];
+        const geojson = route.geometry;
+        
+        // Calculate bounding box from route coordinates
+        const coordinates = geojson.coordinates;
+        const lngs = coordinates.map(coord => coord[0]);
+        const lats = coordinates.map(coord => coord[1]);
+        
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        
+        // Add 20% padding
+        const lngPadding = (maxLng - minLng) * 0.2;
+        const latPadding = (maxLat - minLat) * 0.2;
+        const bbox = [
+          minLng - lngPadding,
+          minLat - latPadding,
+          maxLng + lngPadding,
+          maxLat + latPadding
+        ];
+
+        // Update static map with route visualization
+        const params = new URLSearchParams();
+        params.set('origin', `${originCoordinates[0]},${originCoordinates[1]}`);
+        params.set('destination', `${destinationCoordinates[0]},${destinationCoordinates[1]}`);
+        params.set('bbox', bbox.join(','));
+        params.set('geojson', JSON.stringify(geojson));
+
+        staticMapUrl = `/api/staticmap?${params.toString()}`;
+        isMapLoading = true;
+        console.log('Updated static map URL:', staticMapUrl);
+      }
+    } catch (error) {
+      console.error('Error updating route visualization:', error);
+    }
+  }
+
+  function decodeGeometry(str) {
+    const coordinates = [];
+    let index = 0;
+    let lat = 0;
+    let lng = 0;
+    let shift = 0;
+    let result = 0;
+    let byte = null;
+    let latitude_change;
+    let longitude_change;
+    const factor = Math.pow(10, 5);
+
+    // Coordinates have variable length when encoded, so just keep
+    // track of whether we've hit the end of the string. In each
+    // loop iteration, a single coordinate is decoded.
+    while (index < str.length) {
+      // Reset shift, result, and byte
+      byte = null;
+      shift = 0;
+      result = 0;
+
+      do {
+        byte = str.charCodeAt(index++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20);
+
+      latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+
+      shift = result = 0;
+
+      do {
+        byte = str.charCodeAt(index++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20);
+
+      longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+
+      lat += latitude_change;
+      lng += longitude_change;
+
+      coordinates.push([lng / factor, lat / factor]);
+    }
+
+    return coordinates;
+  }
+
+  function generateStaticMapUrl(origin, destination) {
+    isMapLoading = true;
+    mapImageLoaded = false;
+    
+    if (!origin || !destination || origin.length !== 2 || destination.length !== 2 || !routeGeometry) {
+      console.log('Invalid coordinates or route geometry for map:', { origin, destination, hasGeometry: !!routeGeometry });
+      return "";
+    }
+    
+    const [originLng, originLat] = origin;
+    const [destLng, destLat] = destination;
+    
+    // Decode the route geometry to get all coordinates
+    const coordinates = decodeGeometry(routeGeometry);
+    
+    // Calculate bounding box from all route coordinates
+    const lngs = coordinates.map(coord => coord[0]);
+    const lats = coordinates.map(coord => coord[1]);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    
+    // Add padding to the bounds
+    const padding = 0.2; // Increased padding to 20%
+    const bbox = [
+      minLng - (maxLng - minLng) * padding,
+      minLat - (maxLat - minLat) * padding,
+      maxLng + (maxLng - minLng) * padding,
+      maxLat + (maxLat - minLat) * padding
+    ].join(',');
+    
+    // Create GeoJSON with the actual route coordinates
+    const geojson = {
+      type: "Feature",
+      properties: {
+        "stroke": "#326334",
+        "stroke-width": 5
+      },
+      geometry: {
+        type: "LineString",
+        coordinates: coordinates
+      }
+    };
+    
+    console.log('Map coordinates:', {
+      origin: [originLng, originLat],
+      destination: [destLng, destLat],
+      routePoints: coordinates.length,
+      bbox
+    });
+    
+    // Use server endpoint to get the map URL
+    const mapUrl = `/api/staticmap?origin=${originLng},${originLat}&destination=${destLng},${destLat}&bbox=${bbox}&geojson=${encodeURIComponent(JSON.stringify(geojson))}`;
+    
+    console.log('Generated map URL:', mapUrl);
+    return mapUrl;
+  }
+
+  // Handle geocoder clear
+  function handleGeocderClear() {
+    showAddressFields = false;
+    deliveryBusinessName = '';
+    deliveryStreet = '';
+    deliveryPostalCode = '';
+    deliveryCity = '';
+    deliveryCountry = '';
+    destinationCoordinates = [];
+    staticMapUrl = "";
+    calculatedDistance = 0;
+    transportFee = 0;
+  }
+
+  // Handle geocoder result
+  function handleGeocderResult(event) {
+    handleAddressSelect(event.detail);
+  }
+
+  function validatePhone(phone: string): boolean {
+    // Basic phone validation - allows for international format
+    const phoneRegex = /^\+?[\d\s-()]{10,}$/;
+    const isValid = phoneRegex.test(phone);
+    phoneError = isValid ? '' : getTranslation('errors.invalidPhone') || 'Invalid phone number';
+    return isValid;
   }
 </script>
 
@@ -1714,6 +1666,48 @@
     background: #d8e4b6;
     transform: translateY(-2px);
   }
+
+  .loading-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #C9DA9A;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .loading-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loading-van {
+    animation: bounce 1s infinite ease-in-out;
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.5s ease-in;
+  }
+
+  .map-image.visible {
+    opacity: 1 !important;
+  }
 </style>
 
 <div class="inclusief">
@@ -1781,14 +1775,11 @@
         </div>
         {#if staticMapUrl}
           <img 
+            class="map-image"
+            class:visible={mapImageLoaded}
             src={staticMapUrl} 
-            alt=""
-            style="opacity: 0; position: absolute"
-            crossorigin="anonymous"
-            on:load={() => {
-              mapImageLoaded = true;
-              isMapLoading = false;
-            }}
+            alt="Route map"
+            on:load={() => mapImageLoaded = true}
           />
         {/if}
       </div>
@@ -1796,78 +1787,86 @@
         <div class="description-text-2">
           <span class="description-text-span">{getTranslation('transport.title')}</span>
           <span class="description-text-span2">{getTranslation('transport.costPerKm')}</span>
-          <div class="input-container">
-            <div id="geocoder" class="text"></div>
-            {#if showAddressFields}
-              <div class="address-fields" transition:fade>
-                <div class="input-group full-width">
-                  <input 
-                    type="text" 
-                    class="text" 
-                    id="delivery_business_name" 
-                    name="delivery_business_name"
-                    bind:value={deliveryBusinessName}
-                    placeholder={getTranslation('dateTime.address.businessName')}
-                  />
-                </div>
-                <div class="input-group full-width">
-                  <input 
-                    type="text" 
-                    class="text" 
-                    id="delivery_street" 
-                    name="delivery_street"
-                    bind:value={deliveryStreet}
-                    required
-                    placeholder={getTranslation('dateTime.address.street')}
-                  />
-                </div>
-                <div class="input-group full-width">
-                  <input 
-                    type="text" 
-                    class="text" 
-                    id="delivery_postal_code" 
-                    name="delivery_postal_code"
-                    bind:value={deliveryPostalCode}
-                    required
-                    placeholder={getTranslation('dateTime.address.postalCode')}
-                  />
-                  <input 
-                    type="text" 
-                    class="text" 
-                    id="delivery_city" 
-                    name="delivery_city"
-                    bind:value={deliveryCity}
-                    required
-                    placeholder={getTranslation('dateTime.address.city')}
-                  />
-                </div>
-                <div class="input-group full-width">
-                  <select 
-                    class="text" 
-                    id="delivery_country" 
-                    name="delivery_country"
-                    bind:value={deliveryCountry}
-                    required
-                  >
-                    <option value="" disabled selected>{getTranslation('dateTime.address.country')}</option>
-                    {#each countries as countryOption}
-                      <option value={countryOption}>{getTranslatedCountry(countryOption)}</option>
-                    {/each}
-                  </select>
-                </div>
+        </div>
+        <div class="input-container">
+          <MapboxGeocoder 
+            accessToken={mapboxToken} 
+            types="address" 
+            countries={['NL', 'BE', 'DE']} 
+            language={currentLang} 
+            placeholder={getTranslation('transport.deliveryAddressPlaceholder')} 
+            on:result={handleGeocderResult} 
+            on:clear={handleGeocderClear}
+          />
+          {#if showAddressFields}
+            <div class="address-fields" transition:fade>
+              <div class="input-group full-width">
+                <input 
+                  type="text" 
+                  class="text" 
+                  id="delivery_business_name" 
+                  name="delivery_business_name"
+                  bind:value={deliveryBusinessName}
+                  placeholder={getTranslation('form.deliveryBusinessNamePlaceholder')}
+                />
               </div>
-            {/if}
-          </div>
-          {#if calculatedDistance > 300}
-            <div class="description-text-2">
-              <span class="description-text-span2 error">{getTranslation('transport.longDistance')}</span>
-            </div>
-          {:else if calculatedDistance > 0}
-            <div class="description-text-2">
-              <span class="description-text-span2">{getTranslation('transport.transportCost')}: {formatCurrency(transportFee)}</span>
+              <div class="input-group full-width">
+                <input 
+                  type="text" 
+                  class="text" 
+                  id="delivery_street" 
+                  name="delivery_street"
+                  bind:value={deliveryStreet}
+                  required
+                  placeholder={getTranslation('form.deliveryStreetPlaceholder')}
+                />
+              </div>
+              <div class="input-group full-width">
+                <input 
+                  type="text" 
+                  class="text" 
+                  id="delivery_postal_code" 
+                  name="delivery_postal_code"
+                  bind:value={deliveryPostalCode}
+                  required
+                  placeholder={getTranslation('form.deliveryPostalCodePlaceholder')}
+                />
+                <input 
+                  type="text" 
+                  class="text" 
+                  id="delivery_city" 
+                  name="delivery_city"
+                  bind:value={deliveryCity}
+                  required
+                  placeholder={getTranslation('form.deliveryCityPlaceholder')}
+                />
+              </div>
+              <div class="input-group full-width">
+                <select 
+                  class="text" 
+                  id="delivery_country" 
+                  name="delivery_country"
+                  bind:value={deliveryCountry}
+                  required
+                >
+                  <option value="" disabled selected>{getTranslation('dateTime.address.country')}</option>
+                  {#each countries as countryOption}
+                    <option value={countryOption}>{getTranslatedCountry(countryOption)}</option>
+                  {/each}
+                </select>
+              </div>
             </div>
           {/if}
         </div>
+        {#if calculatedDistance > 300}
+          <div class="description-text-2">
+            <span class="description-text-span2 error">{getTranslation('transport.longDistance')}</span>
+          </div>
+        {:else if calculatedDistance > 0}
+          <div class="description-text-2">
+            <span class="description-text-span2">{getTranslation('transport.transportCost')}: {formatCurrency(transportFee)}</span>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -1878,9 +1877,6 @@
         <div class="description-text-2">
           <span class="description-text-span">{getTranslation('extras.language.title')}</span>
           <span class="description-text-span2">{getTranslation('extras.language.description')}</span>
-        </div>
-        <div class="description-text">
-          <span class="description-text-span2">{getTranslation('extras.language.price')}</span>
         </div>
         <div class="description-text">
           <span class="description-text-span2">{formatCurrency((selectedLanguages.length > 1 ? (selectedLanguages.length - 1) * 125 : 0))} {getTranslation('extras.language.totalText')}</span>
@@ -2135,7 +2131,7 @@
               <span>{getTranslation('extras.branding.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(750)}</td>
+          <td>{formatCurrency(brandingPrice)}</td>
         </tr>
       {/if}
       {#if themaAdded}
@@ -2147,7 +2143,7 @@
               <span>{getTranslation('extras.theme.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(750)}</td>
+          <td>{formatCurrency(themaPrice)}</td>
         </tr>
       {/if}
       {#if getRoastedAdded}
@@ -2159,7 +2155,7 @@
               <span>{getTranslation('extras.getRoasted.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(350)}</td>
+          <td>{formatCurrency(getRoastedPrice)}</td>
         </tr>
       {/if}
     </tbody>
@@ -2192,10 +2188,10 @@
 </div>
 
 <div class="inclusief">
+  <h1 class="h1">{getTranslation('form.title')}</h1>
   <form on:submit={handleSubmit}>
     <div class="form-section">
       <div class="frame">
-        <h1 class="h1">{getTranslation('form.title')}</h1>
         <div class="frame-row">
           <div class="frame-item">
             <div class="vanaf required-field">{getTranslation('form.event')}:</div>
@@ -2258,13 +2254,18 @@
           <div class="frame">
             <input 
               type="tel" 
-              class="text" 
+              class="text {phoneError ? 'error' : ''}" 
               id="contact_phone" 
               name="contact_phone"
               bind:value={contactPhone}
               required
               placeholder={getTranslation('form.phonePlaceholder')}
             >
+            {#if phoneError}
+              <div class="description-text-2">
+                <span class="description-text-span2 error">{phoneError}</span>
+              </div>
+            {/if}
           </div>
         </div>
         <div class="frame-row">
@@ -2371,6 +2372,74 @@
               bind:value={poNumber}
               placeholder={getTranslation('form.poNumberPlaceholder')}
             >
+          </div>
+        </div>
+        <div class="frame-row">
+          <div class="frame-item">
+            <div class="vanaf required-field">{getTranslation('form.deliveryAddress')}:</div>
+          </div>
+          <div class="frame">
+            <div style="margin-top: 10px;">
+              <input 
+                type="text" 
+                class="text" 
+                id="delivery_business_name" 
+                name="delivery_business_name"
+                bind:value={deliveryBusinessName}
+                placeholder={getTranslation('form.deliveryBusinessNamePlaceholder')}
+              />
+              <div style="margin-top: 10px;">
+                <input 
+                  type="text" 
+                  class="text" 
+                  id="delivery_street" 
+                  name="delivery_street"
+                  bind:value={deliveryStreet}
+                  required
+                  placeholder={getTranslation('form.deliveryStreetPlaceholder')}
+                />
+              </div>
+              <div style="margin-top: 10px;">
+                <div style="display: flex; gap: 20px;">
+                  <div style="flex: 1;">
+                    <input 
+                      type="text" 
+                      class="text" 
+                      id="delivery_postal_code" 
+                      name="delivery_postal_code"
+                      bind:value={deliveryPostalCode}
+                      required
+                      placeholder={getTranslation('form.deliveryPostalCodePlaceholder')}
+                    >
+                  </div>
+                  <div style="flex: 2;">
+                    <input 
+                      type="text" 
+                      class="text" 
+                      id="delivery_city" 
+                      name="delivery_city"
+                      bind:value={deliveryCity}
+                      required
+                      placeholder={getTranslation('form.deliveryCityPlaceholder')}
+                    >
+                  </div>
+                </div>
+                <div style="margin-top: 10px;">
+                  <select 
+                    class="text" 
+                    id="delivery_country" 
+                    name="delivery_country"
+                    bind:value={deliveryCountry}
+                    required
+                  >
+                    <option value="" disabled selected>{getTranslation('dateTime.address.country')}</option>
+                    {#each countries as countryOption}
+                      <option value={countryOption}>{getTranslatedCountry(countryOption)}</option>
+                    {/each}
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
