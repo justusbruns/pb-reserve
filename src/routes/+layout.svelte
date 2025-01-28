@@ -12,12 +12,30 @@
     throw new Error('Required configuration is missing');
   }
 
+  // Function to determine the current language based on the URL
+  function getCurrentLanguage() {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.startsWith('/en') ? 'en' : 'nl';
+    }
+    return 'nl';
+  }
+
+  let currentLanguage = getCurrentLanguage();
+
+  // Update language when URL changes
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', () => {
+      currentLanguage = getCurrentLanguage();
+      setContext('translations', translations[currentLanguage]);
+    });
+  }
+
   // Make mapbox token available to all components
   setContext('mapboxToken', data.mapboxToken);
   // Make API token available to all components
   setContext('apiToken', data.PUBLIC_API_TOKEN);
-  // Make translations available to all components
-  setContext('translations', translations.nl);
+  // Make translations available to all components based on current language
+  setContext('translations', translations[currentLanguage]);
 </script>
 
 <style>

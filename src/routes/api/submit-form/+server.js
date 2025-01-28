@@ -73,8 +73,8 @@ export async function POST({ request }) {
         console.log('Creating event...');
         const eventData = {
             'Event name': formData.eventName,
-            'Starts at': formData.startDate + 'T' + formData.startTime + ':00.000Z',
-            'Stops at': formData.endDate + 'T' + formData.endTime + ':00.000Z',
+            'Starts at': formData.startDate,
+            'Stops at': formData.endDate,
             'Languages': formData.selectedLanguages.join(', '),
             'Total Distance (km)': formData.calculatedDistance || 0,
             'Status': 'concept',

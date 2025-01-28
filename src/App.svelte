@@ -13,13 +13,26 @@
   function getCurrentLanguage(): string {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
-      return path.startsWith('/en') ? 'en' : 'nl';
+      const isEnglish = path.startsWith('/en');
+      // Update URL if needed without reloading
+      if (isEnglish && !path.startsWith('/en/')) {
+        const newPath = '/en' + (path === '/en' ? '/' : path);
+        window.history.replaceState(null, '', newPath);
+      }
+      return isEnglish ? 'en' : 'nl';
     }
     return 'nl'; // Default to Dutch
   }
 
-  const currentLanguage = getCurrentLanguage();
+  let currentLanguage = getCurrentLanguage();
   $: currentTranslations = translations[currentLanguage];
+
+  // Update language when URL changes
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', () => {
+      currentLanguage = getCurrentLanguage();
+    });
+  }
 
   let isLoading = true;
 

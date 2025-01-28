@@ -496,23 +496,14 @@
     }
   }
 
-  // Calculate transport fee based on distance
+  // Calculate transport fee based on distance and event duration
   async function calculateTransportFee() {
-    if (calculatedDistance <= 0) {
+    if (calculatedDistance === 0 || distanceError) {
       transportFee = 0;
       return;
     }
-
-    if (calculatedDistance <= 30) {
-      transportFee = 0; // Free within 30km
-    } else if (calculatedDistance <= 100) {
-      transportFee = Math.ceil((calculatedDistance - 30) * 2); // €2 per km after 30km
-    } else {
-      transportFee = Math.ceil((70 * 2) + ((calculatedDistance - 100) * 1.5)); // €2/km up to 100km, then €1.50/km
-    }
-
-    console.log('Transport fee:', transportFee);
-    calculateTotalPrice();
+    // Calculate transport fee based on distance and event duration
+    transportFee = calculatedDistance * (eventDays > 1 ? 4 : 2);
   }
 
   // Update transport fee when event days change
@@ -608,20 +599,9 @@
         selectedLanguages = [...selectedLanguages, newLanguage];
         selectedLanguage = "Empty";
         
-        // Add to extras list for pricing
-        if (selectedLanguages.length > 1) {
-          const existingLanguageExtra = extrasList.find(e => e.id === 'language');
-          if (existingLanguageExtra) {
-            extrasList = extrasList.map(e => 
-              e.id === 'language' 
-                ? { ...e, price: (selectedLanguages.length - 1) * 125 }
-                : e
-            );
-          } else {
-            extrasList = [...extrasList, { id: 'language', price: 125 }];
-          }
-          calculateExtrasPrice();
-        }
+        // Add to extras list for pricing (only for additional languages)
+        extrasList = [...extrasList, { id: `lang-${newLanguage}`, price: 125 }];
+        calculateExtrasPrice();
       }
     }
   }
@@ -639,22 +619,14 @@
     }
     
     // Update extras list for pricing
-    if (selectedLanguages.length > 1) {
-      extrasList = extrasList.map(e => 
-        e.id === 'language' 
-          ? { ...e, price: (selectedLanguages.length - 1) * 125 }
-          : e
-      );
-    } else {
-      extrasList = extrasList.filter(e => e.id !== 'language');
-    }
+    extrasList = extrasList.filter(e => e.id !== `lang-${lang}`);
     calculateExtrasPrice();
   }
 
   function addLanguage(language: string) {
     if (!selectedLanguages.includes(language)) {
       selectedLanguages = [...selectedLanguages, language];
-      extrasList = [...extrasList, { id: `lang-${language}`, price: languagePrice }];
+      extrasList = [...extrasList, { id: `lang-${language}`, price: 125 }];
       calculateExtrasPrice();
     }
   }
@@ -918,21 +890,31 @@
       if (!eventName || !startDate || !endDate || !accountName || !email || !contactPhone ||
           !address || !postalCode || !city || !country ||
           !deliveryStreet || !deliveryPostalCode || !deliveryCity || !deliveryCountry ||
-          !destinationCoordinates) {
-        throw new Error('Please fill in all required fields');
+          !destinationCoordinates || !contactName || !dimensionsAccepted) {
+        isSubmitting = false;
+        throw new Error(getTranslation('form.fillRequired'));
+      }
+
+      function formatDateToUTC(date: string, time: string): string {
+        if (!date || !time) return '';
+        const localDate = new Date(`${date}T${time}`);
+        return localDate.toISOString();
       }
 
       const formData = {
         // Event details
         eventName,
-        startDate,
-        endDate,
+        startDate: formatDateToUTC(startDate, startTime),
+        endDate: formatDateToUTC(endDate, endTime),
         eventDays,
         
         // Company details
         accountName,
         email,
         phone: contactPhone,
+        contactPerson: contactName,
+        vatNumber,
+        poNumber,
         
         // Company address
         address,
@@ -952,7 +934,7 @@
         calculatedDistance,
         transportFee,
         totalPrice,
-        selectedLanguages: selectedLanguages.join(','),
+        selectedLanguages,
         printOption: printOption || false,
         couponCode: couponCode || ''
       };
@@ -1193,9 +1175,9 @@
   let endTime = "17:00";
   let eventName = ""; 
   let basePrice = 1500;
-  let languagePrice = 250; // Price per additional language
-  let brandingPrice = 500;
-  let themaPrice = 300;
+  let languagePrice = 125; // Price per additional language
+  let brandingPrice = 750;
+  let themaPrice = 750;
   let getRoastedPrice = 400;
   let keynotePrice = 750;
   let printPrice = 250;
@@ -1211,6 +1193,7 @@
   let getRoastedAdded = false;
   let keynoteAdded = false;
   let printOptionSelected = false;
+  let printOption = false; // Added printOption state variable
   let eventDays = 1;
   let extrasList = [];
   let selectedLanguages = [];
@@ -1929,11 +1912,10 @@
         <button 
           type="button"
           class="button" 
-          class:selected={printOptionSelected} 
-          on:click={togglePrintOption}
-          on:keydown={(e) => e.key === 'Enter' && togglePrintOption()}
+          class:selected={printOption}
+          on:click={() => printOption = !printOption}
         >
-          {printOptionSelected ? getTranslation('common.remove') : getTranslation('common.add')}
+          {printOption ? getTranslation('extras.printOption.remove') : getTranslation('extras.printOption.add')}
         </button>
       </div>
     </div>
@@ -2107,15 +2089,15 @@
               <span>{languageTranslations[language]}</span>
             </div>
           </td>
-          <td>{formatCurrency(languagePrice)}</td>
+          <td>{formatCurrency(125)}</td>
         </tr>
       {/each}
-      {#if printOptionSelected}
+      {#if printOption}
         <tr>
           <td>{calculateEventDays(startDate, endDate)}</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={togglePrintOption}>×</button>
+              <button class="remove-icon" on:click={() => printOption = !printOption}>×</button>
               <span>{getTranslation('extras.printOption.title')}</span>
             </div>
           </td>
@@ -2131,7 +2113,7 @@
               <span>{getTranslation('extras.branding.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(brandingPrice)}</td>
+          <td>{formatCurrency(750)}</td>
         </tr>
       {/if}
       {#if themaAdded}
@@ -2143,7 +2125,7 @@
               <span>{getTranslation('extras.theme.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(themaPrice)}</td>
+          <td>{formatCurrency(750)}</td>
         </tr>
       {/if}
       {#if getRoastedAdded}
@@ -2155,7 +2137,7 @@
               <span>{getTranslation('extras.getRoasted.title')}</span>
             </div>
           </td>
-          <td>{formatCurrency(getRoastedPrice)}</td>
+          <td>{formatCurrency(350)}</td>
         </tr>
       {/if}
     </tbody>
@@ -2216,8 +2198,8 @@
             <input 
               type="text" 
               class="text" 
-              id="name" 
-              name="name"
+              id="contactPerson" 
+              name="contactPerson"
               bind:value={contactName}
               required
               placeholder={getTranslation('form.namePlaceholder')}
@@ -2372,74 +2354,6 @@
               bind:value={poNumber}
               placeholder={getTranslation('form.poNumberPlaceholder')}
             >
-          </div>
-        </div>
-        <div class="frame-row">
-          <div class="frame-item">
-            <div class="vanaf required-field">{getTranslation('form.deliveryAddress')}:</div>
-          </div>
-          <div class="frame">
-            <div style="margin-top: 10px;">
-              <input 
-                type="text" 
-                class="text" 
-                id="delivery_business_name" 
-                name="delivery_business_name"
-                bind:value={deliveryBusinessName}
-                placeholder={getTranslation('form.deliveryBusinessNamePlaceholder')}
-              />
-              <div style="margin-top: 10px;">
-                <input 
-                  type="text" 
-                  class="text" 
-                  id="delivery_street" 
-                  name="delivery_street"
-                  bind:value={deliveryStreet}
-                  required
-                  placeholder={getTranslation('form.deliveryStreetPlaceholder')}
-                />
-              </div>
-              <div style="margin-top: 10px;">
-                <div style="display: flex; gap: 20px;">
-                  <div style="flex: 1;">
-                    <input 
-                      type="text" 
-                      class="text" 
-                      id="delivery_postal_code" 
-                      name="delivery_postal_code"
-                      bind:value={deliveryPostalCode}
-                      required
-                      placeholder={getTranslation('form.deliveryPostalCodePlaceholder')}
-                    >
-                  </div>
-                  <div style="flex: 2;">
-                    <input 
-                      type="text" 
-                      class="text" 
-                      id="delivery_city" 
-                      name="delivery_city"
-                      bind:value={deliveryCity}
-                      required
-                      placeholder={getTranslation('form.deliveryCityPlaceholder')}
-                    >
-                  </div>
-                </div>
-                <div style="margin-top: 10px;">
-                  <select 
-                    class="text" 
-                    id="delivery_country" 
-                    name="delivery_country"
-                    bind:value={deliveryCountry}
-                    required
-                  >
-                    <option value="" disabled selected>{getTranslation('dateTime.address.country')}</option>
-                    {#each countries as countryOption}
-                      <option value={countryOption}>{getTranslatedCountry(countryOption)}</option>
-                    {/each}
-                  </select>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

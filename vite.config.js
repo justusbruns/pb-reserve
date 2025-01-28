@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [sveltekit(), tsconfigPaths()],
   server: {
     port: 5173,
-    strictPort: true,
     host: true
   },
   ssr: {
@@ -30,6 +29,9 @@ export default defineConfig({
   kit: {
     alias: {
       '@': '/src'
+    },
+    routes: {
+      '/en/*': '/*'
     }
   },
   optimizeDeps: {

@@ -5,11 +5,13 @@
   "private": true,
   "devDependencies": {
     "@tsconfig/svelte": "^5.0.2",
+    "playwright": "^1.50.0",
     "sass": "^1.69.7",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-geocoder": "^5.0.3",
+    "@playwright/test": "^1.50.0",
     "@sveltejs/adapter-vercel": "^5.5.3",
     "@sveltejs/kit": "^2.16.1",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",

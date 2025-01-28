@@ -124,7 +124,8 @@ export default {
         description: "Wil je de gedichten uitprinten? Dan zorgen wij dat er een printer klaarstaat met mooi papier.",
         price: "€ 500,00 / dag",
         pricePerDay: "€ 500,00 / dag",
-        totalText: "totaal voor printen"
+        totalText: "totaal voor printen",
+        add: "Voeg print optie toe"
       }
     },
     languages: {
@@ -679,7 +680,8 @@ export default {
         description: "Want to print the poems? We'll make sure a printer is ready with nice paper.",
         price: "€ 500.00 / day",
         pricePerDay: "€ 500.00 / day",
-        totalText: "total for printing"
+        totalText: "total for printing",
+        add: "Add print option"
       }
     },
     languages: {

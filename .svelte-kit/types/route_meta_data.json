@@ -38,5 +38,11 @@
 	],
 	"/api/test": [
 		"src/routes/api/test/+server.ts"
+	],
+	"/en": [
+		"src/routes/+layout.server.ts"
+	],
+	"/nl": [
+		"src/routes/+layout.server.ts"
 	]
 }
