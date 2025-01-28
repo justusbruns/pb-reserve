@@ -17,24 +17,10 @@ export default defineConfig({
     sourcemap: true,
     assetsDir: 'assets',
     rollupOptions: {
-      external: ['mapbox-gl', '@mapbox/mapbox-gl-geocoder'],
-      output: {
-        globals: {
-          'mapbox-gl': 'mapboxgl',
-          '@mapbox/mapbox-gl-geocoder': 'MapboxGeocoder'
-        }
-      }
-    }
-  },
-  kit: {
-    alias: {
-      '@': '/src'
-    },
-    routes: {
-      '/en/*': '/*'
+      external: ['mapbox-gl', '@mapbox/mapbox-gl-geocoder']
     }
   },
   optimizeDeps: {
-    exclude: ['mapbox-gl', '@mapbox/mapbox-gl-geocoder']
+    include: ['@sveltejs/kit', 'vite']
   }
 });
