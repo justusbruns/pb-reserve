@@ -16,33 +16,18 @@
         error = '';
 
         try {
-            console.log('Attempting login with email:', email);
-            // Get person by email
             const people = await personService.getByEmail(email);
-            console.log('Found people:', people);
             
             if (!people || people.length === 0) {
-                console.log('No person found with this email');
-                error = translations.chauffeur.errors.invalidCredentials;
-                return;
+                throw new Error(translations.chauffeur.errors.invalidCredentials);
             }
 
             const person = people[0];
-            console.log('Person found:', person);
-            console.log('Type of person:', person.fields['Type of person']);
-            console.log('Stored password:', person.fields.Password);
-            console.log('Entered password:', password);
-
-            // Verify person is a chauffeur and password matches
-            if (person.fields['Type of person'] !== 'Chauffeur' || 
-                person.fields.Password !== password) {
-                console.log('Invalid type or password mismatch');
-                error = translations.chauffeur.errors.invalidCredentials;
-                return;
+            if (person.fields['Type of person'] !== 'Chauffeur' || person.fields.Password !== password) {
+                throw new Error(translations.chauffeur.errors.invalidCredentials);
             }
 
             // Login successful
-            console.log('Login successful');
             authStore.login({
                 id: person.id,
                 email: person.fields.Email,
@@ -50,8 +35,8 @@
             });
 
         } catch (err) {
-            console.error('Login error:', err);
-            error = translations.chauffeur.errors.general;
+            console.error('Login error:', err.message);
+            error = err.message;
         } finally {
             isLoading = false;
         }

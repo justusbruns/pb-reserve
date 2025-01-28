@@ -125,7 +125,8 @@ export default {
         price: "€ 500,00 / dag",
         pricePerDay: "€ 500,00 / dag",
         totalText: "totaal voor printen",
-        add: "Voeg print optie toe"
+        add: "Voeg print optie toe",
+        remove: "Verwijder printer"
       }
     },
     languages: {
@@ -437,8 +438,8 @@ export default {
       complimentary: "(Gratis)"
     },
     form: {
-      title: "4. Stuur je Poem Booth boeking in",
-      name: "Jouw naam",
+      title: "Vul je gegevens in",
+      name: "Naam",
       namePlaceholder: "Voer je naam in",
       email: "E-mailadres",
       emailPlaceholder: "Voer je e-mailadres in",
@@ -446,7 +447,10 @@ export default {
       phonePlaceholder: "Voer je telefoonnummer in",
       event: "Evenement naam",
       eventPlaceholder: "Voer de naam van het evenement in",
+      startDate: "Start datum",
+      endDate: "Eind datum",
       accountName: "Bedrijfsnaam",
+      contactName: "Contactpersoon",
       organisationPlaceholder: "Voer de bedrijfsnaam in",
       address: "Adres",
       addressPlaceholder: "Voer het adres in",
@@ -454,18 +458,22 @@ export default {
       postalCodePlaceholder: "Voer de postcode in",
       city: "Plaats",
       cityPlaceholder: "Voer de plaats in",
+      country: "Land",
+      poNumber: "PO nummer (optioneel)",
+      poNumberPlaceholder: "Voer het PO nummer in",
       vatNumber: "BTW nummer",
       vatNumberPlaceholder: "Voer het BTW nummer in",
-      poNumber: "PO nummer (optioneel)",
-      poNumberPlaceholder: "Voer PO nummer in",
-      submitBooking: "Verstuur Boeking",
-      deliveryAddress: "Afleveradres",
-      deliveryBusinessNamePlaceholder: "Voer bedrijfsnaam in (optioneel)",
-      deliveryStreetPlaceholder: "Voer straat en huisnummer in",
-      deliveryPostalCodePlaceholder: "Voer postcode in",
-      deliveryCityPlaceholder: "Voer plaats in",
+      deliveryStreet: "Afleveradres",
+      deliveryStreetPlaceholder: "Voer het afleveradres in",
+      deliveryPostalCode: "Aflever postcode",
+      deliveryPostalCodePlaceholder: "Voer de aflever postcode in",
+      deliveryCity: "Aflever plaats",
+      deliveryCityPlaceholder: "Voer de aflever plaats in",
+      deliveryCountry: "Aflever land",
+      deliveryBusinessName: "Afleverlocatie naam",
+      deliveryBusinessNamePlaceholder: "Voer de naam van de afleverlocatie in",
       dimensions: {
-        text: "Ik begrijp dat de Poem Booth door zijn omvang en gewicht niet via een trap kan worden vervoerd. Plaatsing op een verdieping is alleen mogelijk als er een ruime lift beschikbaar is. Daarnaast begrijp ik dat de lift minimaal 240 cm hoog, 220 cm diep en 90 cm breed moet zijn, en doorgangen minimaal 230 cm hoog en 80 cm breed. Twijfels? Neem gerust contact op via simon@poembooth.com."
+        text: "Ik begrijp dat de Poem Booth door zijn omvang en gewicht niet via een trap kan worden vervoerd. Plaatsing op een verdieping is alleen mogelijk als er een ruime lift beschikbaar is. Daarnaast begrijp ik dat de lift minimaal 240 cm hoog, 220 cm diep en 90 cm breed moet zijn, en doorgangen minimaal 230 cm hoog en 80 cm breed."
       },
       payment: {
         text: "Ik begrijp dat de factuur vóór aanvang van het evenement betaald moet zijn. Zonder betaling kan de Poem Booth helaas niet geleverd worden."
@@ -474,20 +482,8 @@ export default {
         text: "Ik ga akkoord met de",
         link: "boekingsovereenkomst"
       },
-      success: "Je boeking is succesvol verzonden. Dank voor jouw aanvraag. We nemen binnenkort contact met je op om de reservering door te lopen.",
-      confetti: {
-        title: "Gefeliciteerd!",
-        backButton: "Terug naar home"
-      },
-      missingInfo: "Vul de volgende stappen in om je Poem Booth boeking af te ronden:",
-      sections: {
-        deliveryAddress: "Afleveradres",
-        eventDetails: "Evenement Details",
-        personalInfo: "Persoonlijke Informatie",
-        companyInfo: "Bedrijfsinformatie",
-        termsAndConditions: "Boekingsvoorwaarden",
-        language: "Taalselectie"
-      },
+      submitBooking: "Verstuur Boeking",
+      pleaseComplete: "Vul alstublieft de volgende velden in",
       validation: {
         incomplete: "Vul de volgende stappen in om je Poem Booth boeking af te ronden:",
         complete: "Alle stappen zijn voltooid. Je kunt nu je boeking versturen!"
@@ -677,11 +673,12 @@ export default {
       },
       printOption: {
         title: "Print Option",
-        description: "Want to print the poems? We'll make sure a printer is ready with nice paper.",
+        description: "Want to print the poems? We'll make sure a printer is ready with beautiful paper.",
         price: "€ 500.00 / day",
         pricePerDay: "€ 500.00 / day",
         totalText: "total for printing",
-        add: "Add print option"
+        add: "Add printer",
+        remove: "Remove printer"
       }
     },
     languages: {
@@ -993,8 +990,8 @@ export default {
       complimentary: "(Complimentary)"
     },
     form: {
-      title: "4. Send your Poem Booth booking",
-      name: "Your name",
+      title: "Fill in your details",
+      name: "Name",
       namePlaceholder: "Enter your name",
       email: "Email address",
       emailPlaceholder: "Enter your email address",
@@ -1002,7 +999,10 @@ export default {
       phonePlaceholder: "Enter your phone number",
       event: "Event name",
       eventPlaceholder: "Enter the event name",
+      startDate: "Start date",
+      endDate: "End date",
       accountName: "Company name",
+      contactName: "Contact person",
       organisationPlaceholder: "Enter the company name",
       address: "Address",
       addressPlaceholder: "Enter the address",
@@ -1010,18 +1010,22 @@ export default {
       postalCodePlaceholder: "Enter the postal code",
       city: "City",
       cityPlaceholder: "Enter the city",
+      country: "Country",
+      poNumber: "PO number (optional)",
+      poNumberPlaceholder: "Enter the PO number",
       vatNumber: "VAT number",
       vatNumberPlaceholder: "Enter the VAT number",
-      poNumber: "PO number (optional)",
-      poNumberPlaceholder: "Enter PO number",
-      submitBooking: "Submit Booking",
-      deliveryAddress: "Delivery Address",
-      deliveryBusinessNamePlaceholder: "Enter business name (optional)",
-      deliveryStreetPlaceholder: "Enter street and house number",
-      deliveryPostalCodePlaceholder: "Enter postal code",
-      deliveryCityPlaceholder: "Enter city",
+      deliveryStreet: "Delivery address",
+      deliveryStreetPlaceholder: "Enter the delivery address",
+      deliveryPostalCode: "Delivery postal code",
+      deliveryPostalCodePlaceholder: "Enter the delivery postal code",
+      deliveryCity: "Delivery city",
+      deliveryCityPlaceholder: "Enter the delivery city",
+      deliveryCountry: "Delivery country",
+      deliveryBusinessName: "Delivery location name",
+      deliveryBusinessNamePlaceholder: "Enter the delivery location name",
       dimensions: {
-        text: "I understand that due to its size and weight, the Poem Booth cannot be transported via stairs. Installation on upper floors is only possible if a spacious elevator is available. Additionally, I understand that the elevator must be at least 240 cm high, 220 cm deep, and 90 cm wide, and passageways must be at least 230 cm high and 80 cm wide. Any doubts? Feel free to contact us at simon@poembooth.com."
+        text: "I understand that due to its size and weight, the Poem Booth cannot be transported via stairs. Installation on upper floors is only possible if a spacious elevator is available. Additionally, I understand that the elevator must be at least 240 cm high, 220 cm deep, and 90 cm wide, and passageways must be at least 230 cm high and 80 cm wide."
       },
       payment: {
         text: "I understand that the invoice must be paid before the event starts. Without payment, the Poem Booth cannot be delivered."
@@ -1030,20 +1034,8 @@ export default {
         text: "I agree to the",
         link: "booking agreement"
       },
-      success: "Your booking has been successfully submitted. Thank you for your request. We will contact you soon to review the reservation.",
-      confetti: {
-        title: "Congratulations!",
-        backButton: "Back to home"
-      },
-      missingInfo: "Please complete the following steps to finalize your Poem Booth booking:",
-      sections: {
-        deliveryAddress: "Delivery Address",
-        eventDetails: "Event Details",
-        personalInfo: "Personal Information",
-        companyInfo: "Company Information",
-        termsAndConditions: "Booking Agreement",
-        language: "Language Selection"
-      },
+      submitBooking: "Submit Booking",
+      pleaseComplete: "Please complete the following fields",
       validation: {
         incomplete: "Please complete the following steps to finalize your Poem Booth booking:",
         complete: "All steps are completed. You can now submit your booking!"

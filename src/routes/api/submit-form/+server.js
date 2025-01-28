@@ -28,7 +28,6 @@ export async function POST({ request }) {
             'deliveryPostalCode',
             'deliveryCity',
             'deliveryCountry',
-            'deliveryBusinessName',
             'contactPerson'
         ];
 

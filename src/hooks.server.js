@@ -1,11 +1,13 @@
 import { env } from '$env/dynamic/private';
 
-// Log environment variables on server start
-console.log('Server environment variables:', {
-    AIRTABLE_PAT: env.AIRTABLE_PAT ? 'Set' : 'Not set',
-    AIRTABLE_BASE_ID: env.AIRTABLE_BASE_ID ? 'Set' : 'Not set',
-    MAPBOX_TOKEN: env.MAPBOX_TOKEN ? 'Set' : 'Not set'
-});
+// Keep server environment check but make it conditional
+if (process.env.NODE_ENV === 'development') {
+    console.log('Server environment variables:', {
+        AIRTABLE_BASE_ID: !!env.AIRTABLE_BASE_ID,
+        AIRTABLE_PAT: !!env.AIRTABLE_PAT,
+        MAPBOX_TOKEN: !!env.MAPBOX_TOKEN
+    });
+}
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
@@ -19,16 +21,18 @@ export async function handle({ event, resolve }) {
         return new Response('Server configuration error', { status: 500 });
     }
 
-    console.log('Incoming request:', {
-        method: event.request.method,
-        url: event.url.pathname,
-        headers: Object.fromEntries(event.request.headers)
-    });
+    // Keep API request logging for monitoring
+    if (event.url.pathname.startsWith('/api/')) {
+        console.log('API request:', {
+            path: event.url.pathname,
+            method: event.request.method,
+            timestamp: new Date().toISOString()
+        });
+    }
 
     try {
         // Handle API requests
         if (event.url.pathname.startsWith('/api/')) {
-            console.log('Handling API request:', event.url.pathname);
             const response = await resolve(event);
             
             console.log('API response:', {

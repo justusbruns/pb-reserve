@@ -810,6 +810,42 @@
     }
   };
 
+  let formErrors = [];
+
+  function getMissingFields() {
+    formErrors = [];
+    
+    // Event Details
+    if (!eventName) formErrors.push(getTranslation('form.event'));
+    if (!startDate || !startTime) formErrors.push(getTranslation('form.startDate'));
+    if (!endDate || !endTime) formErrors.push(getTranslation('form.endDate'));
+    
+    // Company Details
+    if (!accountName) formErrors.push(getTranslation('form.accountName'));
+    if (!address) formErrors.push(getTranslation('form.address'));
+    if (!postalCode) formErrors.push(getTranslation('form.postalCode'));
+    if (!city) formErrors.push(getTranslation('form.city'));
+    if (!country) formErrors.push(getTranslation('form.country'));
+    
+    // Contact Details
+    if (!contactName) formErrors.push(getTranslation('form.contactName'));
+    if (!email || !validateEmail(email)) formErrors.push(getTranslation('form.email'));
+    if (!contactPhone || !validatePhone(contactPhone)) formErrors.push(getTranslation('form.phone'));
+    
+    // Delivery Details
+    if (!deliveryStreet) formErrors.push(getTranslation('form.deliveryStreet'));
+    if (!deliveryPostalCode) formErrors.push(getTranslation('form.deliveryPostalCode'));
+    if (!deliveryCity) formErrors.push(getTranslation('form.deliveryCity'));
+    if (!deliveryCountry) formErrors.push(getTranslation('form.deliveryCountry'));
+    
+    // Terms
+    if (!dimensionsAccepted) formErrors.push(getTranslation('form.dimensions'));
+    if (!termsAccepted) formErrors.push(getTranslation('form.terms'));
+    if (!paymentAccepted) formErrors.push(getTranslation('form.payment'));
+
+    return formErrors;
+  }
+
   function isFormValid(): boolean {
     // Required fields validation
     const requiredFieldsValid = !!(
@@ -834,36 +870,23 @@
       validateEmail(email)
     );
 
-    // Invoice contact validation
-    const invoiceContactValid = !hasDifferentInvoiceContact || !!(
-      invoiceContactName &&
-      invoiceContactEmail &&
-      invoiceContactPhone
-    );
-
     // Terms acceptance validation
     const termsValid = !!(
       termsAccepted &&
       dimensionsAccepted &&
-      paymentAccepted &&
-      ageAccepted
+      paymentAccepted
     );
 
     // Email format validation
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const invoiceEmailValid = !hasDifferentInvoiceContact || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceContactEmail);
 
     // Return overall form validity
     return (
       requiredFieldsValid &&
-      invoiceContactValid &&
       termsValid &&
       emailValid &&
-      invoiceEmailValid &&
       !distanceError && // No distance calculation errors
-      !emailError && // No email validation errors
-      !invoiceEmailError && // No invoice email validation errors
-      !phoneError // No phone validation errors
+      !emailError // No email validation errors
     );
   }
 
@@ -884,15 +907,15 @@
   async function handleSubmit(event) {
     event.preventDefault();
     isSubmitting = true;
+    formErrors = [];
     
     try {
-      // Validate required fields
-      if (!eventName || !startDate || !endDate || !accountName || !email || !contactPhone ||
-          !address || !postalCode || !city || !country ||
-          !deliveryStreet || !deliveryPostalCode || !deliveryCity || !deliveryCountry ||
-          !destinationCoordinates || !contactName || !dimensionsAccepted) {
+      const missingFields = getMissingFields();
+      
+      if (missingFields.length > 0) {
         isSubmitting = false;
-        throw new Error(getTranslation('form.fillRequired'));
+        const errorMessage = `${getTranslation('form.pleaseComplete')}:\n${missingFields.join('\n')}`;
+        throw new Error(errorMessage);
       }
 
       function formatDateToUTC(date: string, time: string): string {
@@ -1261,7 +1284,6 @@
   let termsAccepted = false;
   let dimensionsAccepted = false;
   let paymentAccepted = false;
-  let ageAccepted = false;
 
   // Invoice address
   let invoiceAddressInput = '';
@@ -1690,6 +1712,24 @@
 
   .map-image.visible {
     opacity: 1 !important;
+  }
+
+  .error-message {
+    background-color: #fff3f3;
+    border: 1px solid #326334;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: #326334;
+  }
+
+  .error-message ul {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+  }
+
+  .error-message li {
+    margin: 0.25rem 0;
   }
 </style>
 
@@ -2430,6 +2470,16 @@
         {#if submitError}
           <div class="description-text-2">
             <span class="description-text-span2 error">{submitError}</span>
+          </div>
+        {/if}
+        {#if formErrors.length > 0}
+          <div class="error-message" transition:fade>
+            <p>{getTranslation('form.pleaseComplete')}:</p>
+            <ul>
+              {#each formErrors as error}
+                <li>{error}</li>
+              {/each}
+            </ul>
           </div>
         {/if}
       </div>

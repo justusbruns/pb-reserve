@@ -4,22 +4,23 @@ let base: any = null;
 
 function initializeAirtable() {
   if (!base && window.env?.AIRTABLE_PAT && window.env?.AIRTABLE_BASE_ID) {
-    base = new Airtable({
+    const config = {
       apiKey: window.env.AIRTABLE_PAT,
       endpointUrl: 'https://api.airtable.com'
-    }).base(window.env.AIRTABLE_BASE_ID);
+    };
 
-    // Test API connection
-    setTimeout(async () => {
-      try {
-        const testResult = await base('Reservations').select({ maxRecords: 1 }).firstPage();
+    // Test API connection only in development
+    if (process.env.NODE_ENV === 'development') {
+      base = new Airtable(config).base(window.env.AIRTABLE_BASE_ID);
+      base('Reservations').select({ maxRecords: 1 }).firstPage().then(() => {
         console.log('Airtable connection test: Success');
-        console.log('Using base ID:', window.env.AIRTABLE_BASE_ID);
-      } catch (error) {
+      }).catch((error) => {
         console.error('Airtable connection test: Failed');
         console.error('Error details:', error.message);
-      }
-    }, 0);
+      });
+    } else {
+      base = new Airtable(config).base(window.env.AIRTABLE_BASE_ID);
+    }
   }
   return base;
 }

@@ -23,12 +23,10 @@
 
     async function loadAvailability() {
         try {
-            console.log('Loading availability for event:', event.id);
             const availability = await availabilityService.getByEventAndChauffeur(
                 event.id,
                 chauffeurId
             );
-            console.log('Loaded availability:', availability);
             if (availability) {
                 currentStatus = availability.Availability;
                 remarks = availability.Remarks || '';
@@ -53,12 +51,6 @@
         error = '';
 
         try {
-            console.log('Updating availability:', {
-                eventId: event.id,
-                chauffeurId,
-                status
-            });
-            
             await availabilityService.upsertAvailability(
                 chauffeurId,
                 event.id,
@@ -81,12 +73,6 @@
         error = '';
 
         try {
-            console.log('Updating availability:', {
-                eventId: event.id,
-                chauffeurId,
-                status
-            });
-            
             await availabilityService.upsertAvailability(
                 chauffeurId,
                 event.id,
