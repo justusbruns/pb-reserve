@@ -33,9 +33,6 @@
 	"/api/submit-form": [
 		"src/routes/api/submit-form/+server.js"
 	],
-	"/api/test-submit": [
-		"src/routes/api/test-submit/+server.js"
-	],
 	"/api/test": [
 		"src/routes/api/test/+server.ts"
 	],

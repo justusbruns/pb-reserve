@@ -1,10 +1,150 @@
-import Airtable from "airtable";
-import { A as AIRTABLE_PAT, a as AIRTABLE_BASE_ID } from "./private.js";
-const base = new Airtable({
-  apiKey: AIRTABLE_PAT,
-  endpointUrl: "https://api.airtable.com"
-}).base(AIRTABLE_BASE_ID);
+let envVars;
+try {
+  const { env } = await import("./private.js").then((n) => n._);
+  envVars = env;
+} catch (error) {
+  envVars = process.env;
+}
+console.log("Initializing Airtable client with:", {
+  AIRTABLE_PAT: envVars.AIRTABLE_PAT ? "Set" : "Not set",
+  AIRTABLE_BASE_ID: envVars.AIRTABLE_BASE_ID ? "Set" : "Not set"
+});
+const TABLES = {
+  Events: "tblbE17oxiSW6dMRu",
+  Reservations: "tblcpzyw4RpwUqk8M",
+  Organizations: "tbl9a7ZWAlnu8BuCD",
+  Persons: "tblz3XLyxVLE35lw9",
+  Products: "tbl71K5MsJCD0goFZ",
+  ProductGroups: "tbl1Yze5UK4ORaICf",
+  Availability: "tbl0xNLbp0S7hzgvo",
+  Configuration: "tblotNICLMcUsCBrD"
+};
+async function airtableRequest(endpoint, options = {}) {
+  const baseUrl = "https://api.airtable.com/v0";
+  const url = `${baseUrl}/${envVars.AIRTABLE_BASE_ID}${endpoint}`;
+  console.log("Making Airtable request:", {
+    url,
+    method: options.method || "GET",
+    headers: {
+      "Authorization": "Bearer [PAT]",
+      // Don't log the actual token
+      "Content-Type": "application/json",
+      ...options.headers
+    }
+  });
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Authorization": `Bearer ${envVars.AIRTABLE_PAT}`,
+      "Content-Type": "application/json",
+      ...options.headers
+    }
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    console.error("Airtable request failed:", {
+      status: response.status,
+      statusText: response.statusText,
+      error
+    });
+    throw new Error(error.error?.message || response.statusText);
+  }
+  const data = await response.json();
+  console.log("Airtable response:", data);
+  return data;
+}
+class Table {
+  constructor(tableName) {
+    this.tableName = TABLES[tableName];
+    console.log(`Initialized table: ${tableName} with ID: ${this.tableName}`);
+  }
+  async create(fields) {
+    console.log(`Creating record in ${this.tableName}:`, fields);
+    const response = await airtableRequest(`/${this.tableName}`, {
+      method: "POST",
+      body: JSON.stringify({
+        records: [{
+          fields
+        }]
+      })
+    });
+    return response.records[0];
+  }
+  async destroy(recordId) {
+    console.log(`Deleting record ${recordId} from ${this.tableName}`);
+    return airtableRequest(`/${this.tableName}/${recordId}`, {
+      method: "DELETE"
+    });
+  }
+  async find(recordId) {
+    console.log(`Finding record ${recordId} in ${this.tableName}`);
+    return airtableRequest(`/${this.tableName}/${recordId}`);
+  }
+  async select(params = {}) {
+    console.log(`Selecting records from ${this.tableName}:`, params);
+    const queryParams = new URLSearchParams();
+    if (params.maxRecords) {
+      queryParams.append("maxRecords", params.maxRecords);
+    }
+    if (params.view) {
+      queryParams.append("view", params.view);
+    }
+    if (params.filterByFormula) {
+      queryParams.append("filterByFormula", params.filterByFormula);
+    }
+    if (params.sort) {
+      queryParams.append("sort", JSON.stringify(params.sort));
+    }
+    if (params.offset) {
+      queryParams.append("offset", params.offset);
+    }
+    const queryString = queryParams.toString();
+    return airtableRequest(`/${this.tableName}${queryString ? `?${queryString}` : ""}`);
+  }
+  async update(recordId, fields) {
+    console.log(`Updating record ${recordId} in ${this.tableName}:`, fields);
+    const response = await airtableRequest(`/${this.tableName}/${recordId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        fields
+      })
+    });
+    return response;
+  }
+  async createBatch(records) {
+    console.log(`Creating batch records in ${this.tableName}:`, records);
+    const response = await airtableRequest(`/${this.tableName}`, {
+      method: "POST",
+      body: JSON.stringify({
+        records: records.map((fields) => ({ fields }))
+      })
+    });
+    return response.records;
+  }
+  async updateBatch(records) {
+    console.log(`Updating batch records in ${this.tableName}:`, records);
+    const response = await airtableRequest(`/${this.tableName}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        records: records.map(({ id, fields }) => ({
+          id,
+          fields
+        }))
+      })
+    });
+    return response.records;
+  }
+  async destroyBatch(recordIds) {
+    console.log(`Deleting batch records from ${this.tableName}:`, recordIds);
+    const queryParams = new URLSearchParams();
+    recordIds.forEach((id) => queryParams.append("records[]", id));
+    return airtableRequest(`/${this.tableName}?${queryParams.toString()}`, {
+      method: "DELETE"
+    });
+  }
+}
 function formatRecord(record) {
+  if (!record) return null;
   return {
     id: record.id,
     ...record.fields
@@ -12,11 +152,31 @@ function formatRecord(record) {
 }
 function handleAirtableError(error) {
   console.error("Airtable error:", error);
+  if (error.name === "Error" && error.statusCode) {
+    const message = error.message || "Unknown Airtable error";
+    const statusCode = error.statusCode;
+    return {
+      error: true,
+      message,
+      statusCode
+    };
+  }
   return {
-    error: error.message || "An error occurred while accessing Airtable",
-    status: error.statusCode || 500
+    error: true,
+    message: error.message || "Internal server error",
+    statusCode: 500
   };
 }
+const base = {
+  Organizations: new Table("Organizations"),
+  Persons: new Table("Persons"),
+  Events: new Table("Events"),
+  Reservations: new Table("Reservations"),
+  Products: new Table("Products"),
+  ProductGroups: new Table("ProductGroups"),
+  Availability: new Table("Availability"),
+  Configuration: new Table("Configuration")
+};
 export {
   base as b,
   formatRecord as f,

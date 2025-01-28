@@ -1,5 +1,5 @@
 import { g, d, e, f, h, i, s } from "./chunks/internal.js";
-import { a, b, c } from "./chunks/shared-server.js";
+import { s as s2, a, b } from "./chunks/private.js";
 export {
   g as get_hooks,
   d as options,
@@ -7,9 +7,9 @@ export {
   f as set_building,
   h as set_manifest,
   i as set_prerendering,
-  a as set_private_env,
-  b as set_public_env,
+  s2 as set_private_env,
+  a as set_public_env,
   s as set_read_implementation,
-  c as set_safe_public_env
+  b as set_safe_public_env
 };
 //# sourceMappingURL=internal.js.map

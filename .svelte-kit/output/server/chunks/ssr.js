@@ -25,6 +25,9 @@ function subscribe(store, ...callbacks) {
 function null_to_empty(value) {
   return value;
 }
+function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
+  return new CustomEvent(type, { detail, bubbles, cancelable });
+}
 let current_component;
 function set_current_component(component) {
   current_component = component;
@@ -35,6 +38,25 @@ function get_current_component() {
 }
 function onDestroy(fn) {
   get_current_component().$$.on_destroy.push(fn);
+}
+function createEventDispatcher() {
+  const component = get_current_component();
+  return (type, detail, { cancelable = false } = {}) => {
+    const callbacks = component.$$.callbacks[type];
+    if (callbacks) {
+      const event = custom_event(
+        /** @type {string} */
+        type,
+        detail,
+        { cancelable }
+      );
+      callbacks.slice().forEach((fn) => {
+        fn.call(component, event);
+      });
+      return !event.defaultPrevented;
+    }
+    return true;
+  };
 }
 function setContext(key, context) {
   get_current_component().$$.context.set(key, context);
@@ -126,17 +148,18 @@ function add_attribute(name, value, boolean) {
 }
 export {
   setContext as a,
-  subscribe as b,
+  createEventDispatcher as b,
   create_ssr_component as c,
   add_attribute as d,
   escape as e,
-  null_to_empty as f,
+  each as f,
   getContext as g,
-  each as h,
+  noop as h,
+  safe_not_equal as i,
   missing_component as m,
-  noop as n,
+  null_to_empty as n,
   onDestroy as o,
-  safe_not_equal as s,
+  subscribe as s,
   validate_component as v
 };
 //# sourceMappingURL=ssr.js.map

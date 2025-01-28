@@ -1,9 +1,28 @@
-const MAPBOX_TOKEN = "pk.eyJ1IjoianVzdHVzYnJ1bnMiLCJhIjoiY2l2MHQ3cHI4MDVjZDJ0bDFwcDBrMHZ1dCJ9.icD7LzFLwqnEqOAu34E7xw";
-const AIRTABLE_PAT = "patQcBAUMZwMREYXj.24ef230ffa1f0535d81aa74fb91493707fc347672f7e22c29e6057300a34d226";
-const AIRTABLE_BASE_ID = "apphYtwSYRt7UDukL";
+let private_env = {};
+let public_env = {};
+let safe_public_env = {};
+function set_private_env(environment) {
+  private_env = environment;
+}
+function set_public_env(environment) {
+  public_env = environment;
+}
+function set_safe_public_env(environment) {
+  safe_public_env = environment;
+}
+const _private = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  get env() {
+    return private_env;
+  }
+}, Symbol.toStringTag, { value: "Module" }));
 export {
-  AIRTABLE_PAT as A,
-  MAPBOX_TOKEN as M,
-  AIRTABLE_BASE_ID as a
+  _private as _,
+  set_public_env as a,
+  set_safe_public_env as b,
+  public_env as c,
+  safe_public_env as d,
+  private_env as p,
+  set_private_env as s
 };
 //# sourceMappingURL=private.js.map

@@ -10,11 +10,13 @@ return {
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {"start":"_app/immutable/entry/start.DFLsdvd2.js","app":"_app/immutable/entry/app.ayLbtjNa.js","imports":["_app/immutable/entry/start.DFLsdvd2.js","_app/immutable/chunks/Cp7kWzhg.js","_app/immutable/chunks/CvM60qSQ.js","_app/immutable/entry/app.ayLbtjNa.js","_app/immutable/chunks/CvM60qSQ.js","_app/immutable/chunks/D3t6v8w7.js"],"stylesheets":[],"fonts":[],"uses_env_dynamic_public":false},
+		client: {"start":"_app/immutable/entry/start.DF8OSlbZ.js","app":"_app/immutable/entry/app.DnSPMmh1.js","imports":["_app/immutable/entry/start.DF8OSlbZ.js","_app/immutable/chunks/COZzhG_7.js","_app/immutable/chunks/D_YW4clq.js","_app/immutable/entry/app.DnSPMmh1.js","_app/immutable/chunks/D_YW4clq.js","_app/immutable/chunks/Be0PZ81N.js"],"stylesheets":[],"fonts":[],"uses_env_dynamic_public":false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
-			__memo(() => import('./nodes/2.js'))
+			__memo(() => import('./nodes/2.js')),
+			__memo(() => import('./nodes/3.js')),
+			__memo(() => import('./nodes/4.js'))
 		],
 		routes: [
 			{
@@ -67,18 +69,11 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/api/persons/_server.js'))
 			},
 			{
-				id: "/api/products",
-				pattern: /^\/api\/products\/?$/,
-				params: [],
-				page: null,
-				endpoint: __memo(() => import('./entries/endpoints/api/products/_server.js'))
-			},
-			{
-				id: "/api/products/[id]",
+				id: "/api/products/[slug]",
 				pattern: /^\/api\/products\/([^/]+?)\/?$/,
-				params: [{"name":"id","optional":false,"rest":false,"chained":false}],
+				params: [{"name":"slug","optional":false,"rest":false,"chained":false}],
 				page: null,
-				endpoint: __memo(() => import('./entries/endpoints/api/products/_id_/_server.ts.js'))
+				endpoint: __memo(() => import('./entries/endpoints/api/products/_slug_/_server.ts.js'))
 			},
 			{
 				id: "/api/reservations",
@@ -95,11 +90,32 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/api/staticmap/_server.ts.js'))
 			},
 			{
+				id: "/api/submit-form",
+				pattern: /^\/api\/submit-form\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/submit-form/_server.js'))
+			},
+			{
 				id: "/api/test",
 				pattern: /^\/api\/test\/?$/,
 				params: [],
 				page: null,
 				endpoint: __memo(() => import('./entries/endpoints/api/test/_server.ts.js'))
+			},
+			{
+				id: "/en",
+				pattern: /^\/en\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 3 },
+				endpoint: null
+			},
+			{
+				id: "/nl",
+				pattern: /^\/nl\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 4 },
+				endpoint: null
 			}
 		],
 		matchers: async () => {
