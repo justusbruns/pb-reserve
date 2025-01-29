@@ -10,11 +10,12 @@
     "clean": "rm -rf node_modules .vite dist .svelte-kit"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.1",
+    "@playwright/test": "^1.50.0",
     "@sveltejs/adapter-vercel": "^4.0.3",
     "@sveltejs/kit": "^2.5.27",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "@tsconfig/svelte": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.8",
     "sass": "^1.69.7",
     "svelte-preprocess": "^6.0.0",
     "typescript": "^5.5.0",
@@ -29,6 +30,7 @@
     "dotenv": "^16.3.1",
     "flatpickr": "^4.6.13",
     "ical-generator": "^6.0.1",
+    "jsonwebtoken": "^9.0.2",
     "mapbox-gl": "^3.0.1",
     "svelte": "^5.0.0"
   },

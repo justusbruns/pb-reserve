@@ -21,16 +21,25 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 5173,
       host: true,
+      strictPort: false,
       fs: {
         allow: ['.']
       }
     },
     preview: {
-      port: 4173
+      port: 4174
     },
     ssr: {
       noExternal: ['@sveltejs/kit'],
-      external: ['jsonwebtoken']
+      external: [
+        'jsonwebtoken',
+        'crypto',
+        'util',
+        'stream',
+        'events',
+        'buffer',
+        'querystring'
+      ]
     },
     build: {
       target: 'es2020',
@@ -38,7 +47,17 @@ export default defineConfig(({ command, mode }) => {
       sourcemap: true,
       assetsDir: 'assets',
       rollupOptions: {
-        external: ['mapbox-gl', '@mapbox/mapbox-gl-geocoder', 'jsonwebtoken'],
+        external: [
+          'mapbox-gl',
+          '@mapbox/mapbox-gl-geocoder',
+          'jsonwebtoken',
+          'crypto',
+          'util',
+          'stream',
+          'events',
+          'buffer',
+          'querystring'
+        ],
         output: {
           globals: {
             'mapbox-gl': 'mapboxgl',
