@@ -7,7 +7,11 @@
   import "./vars.css";
   import "./styles.css";
 
-  export let translations: Translations;
+  interface Props {
+    translations: Translations;
+  }
+
+  let { translations }: Props = $props();
 
   // Function to determine the current language based on the URL
   function getCurrentLanguage(): string {
@@ -24,8 +28,8 @@
     return 'nl'; // Default to Dutch
   }
 
-  let currentLanguage = getCurrentLanguage();
-  $: currentTranslations = translations[currentLanguage];
+  let currentLanguage = $state(getCurrentLanguage());
+  let currentTranslations = $derived(translations[currentLanguage]);
 
   // Update language when URL changes
   if (typeof window !== 'undefined') {
@@ -34,7 +38,7 @@
     });
   }
 
-  let isLoading = true;
+  let isLoading = $state(true);
 
   onMount(() => {
     isLoading = false;

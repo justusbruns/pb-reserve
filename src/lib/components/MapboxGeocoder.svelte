@@ -68,16 +68,25 @@
   }
 </style>
 
-<script>
+<script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   
-  export let placeholder = '';
-  export let language = 'en';
-  export let types = 'address';
-  export let countries = ['NL', 'BE', 'DE'];
+  interface Props {
+    placeholder?: string;
+    language?: string;
+    types?: string;
+    countries?: any;
+  }
+
+  let {
+    placeholder = '',
+    language = 'en',
+    types = 'address',
+    countries = ['NL', 'BE', 'DE']
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
-  let input;
+  let input = $state();
   let suggestionsContainer;
   let timeoutId;
 
@@ -179,8 +188,8 @@
     type="text"
     class="mapboxgl-ctrl-geocoder--input"
     {placeholder}
-    on:input={handleInput}
+    oninput={handleInput}
   />
 </div>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />

@@ -3,16 +3,25 @@
     import { fade } from 'svelte/transition';
     import { onMount } from 'svelte';
 
-    export let event: any;
-    export let chauffeurId: string;
-    export let translations: any;
-    export let travelTime: number | null = null;
+    interface Props {
+        event: any;
+        chauffeurId: string;
+        translations: any;
+        travelTime?: number | null;
+    }
 
-    let currentStatus = '';
-    let remarks = '';
-    let isUpdating = false;
-    let error = '';
-    let isLoading = true;
+    let {
+        event,
+        chauffeurId,
+        translations,
+        travelTime = null
+    }: Props = $props();
+
+    let currentStatus = $state('');
+    let remarks = $state('');
+    let isUpdating = $state(false);
+    let error = $state('');
+    let isLoading = $state(true);
     let remarksTimeout: NodeJS.Timeout;
 
     const statusOptions = [
@@ -159,21 +168,21 @@
             <div class="availability-buttons">
                 <button 
                     class="availability-button {currentStatus === 'Available' ? 'selected' : ''}"
-                    on:click={() => updateAvailability('Available')}
+                    onclick={() => updateAvailability('Available')}
                     disabled={isUpdating}
                 >
                     {translations.chauffeur.events.statuses.available}
                 </button>
                 <button 
                     class="availability-button {currentStatus === 'Not Available' ? 'selected' : ''}"
-                    on:click={() => updateAvailability('Not Available')}
+                    onclick={() => updateAvailability('Not Available')}
                     disabled={isUpdating}
                 >
                     {translations.chauffeur.events.statuses.notAvailable}
                 </button>
                 <button 
                     class="availability-button {currentStatus === 'Maybe Available' ? 'selected' : ''}"
-                    on:click={() => updateAvailability('Maybe Available')}
+                    onclick={() => updateAvailability('Maybe Available')}
                     disabled={isUpdating}
                 >
                     {translations.chauffeur.events.statuses.maybeAvailable}
@@ -183,7 +192,7 @@
             <div class="remarks-container">
                 <textarea
                     bind:value={remarks}
-                    on:input={handleRemarksChange}
+                    oninput={handleRemarksChange}
                     placeholder={translations.chauffeur.events.remarksPlaceholder}
                     rows="2"
                     disabled={isUpdating}

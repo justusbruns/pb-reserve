@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { onMount } from 'svelte';
     import { fade } from 'svelte/transition';
     import { eventService } from '../services/airtable/eventService';
@@ -6,22 +8,21 @@
     import EventCard from './EventCard.svelte';
     import Login from './Login.svelte';
 
-    export let translations: any;
+    interface Props {
+        translations: any;
+    }
 
-    let events: any[] = [];
-    let isLoading = true;
-    let error = '';
-    let travelTimes: Record<string, number> = {};
-    let hasLoadedEvents = false;
+    let { translations }: Props = $props();
+
+    let events: any[] = $state([]);
+    let isLoading = $state(true);
+    let error = $state('');
+    let travelTimes: Record<string, number> = $state({});
+    let hasLoadedEvents = $state(false);
 
     const ORIGIN_ADDRESS = 'Gedempt Hamerkanaal 111, Amsterdam';
     const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-    $: user = $authStore.user;
-    $: isAuthenticated = $authStore.isAuthenticated;
-    $: if (isAuthenticated && !hasLoadedEvents) {
-        loadEvents();
-    }
 
     onMount(async () => {
         if (isAuthenticated) {
@@ -122,6 +123,13 @@
         events = [];
         authStore.logout();
     }
+    let user = $derived($authStore.user);
+    let isAuthenticated = $derived($authStore.isAuthenticated);
+    run(() => {
+        if (isAuthenticated && !hasLoadedEvents) {
+            loadEvents();
+        }
+    });
 </script>
 
 {#if !isAuthenticated}
@@ -130,7 +138,7 @@
     <div class="portal-container" in:fade>
         <div class="portal-header">
             <h1>{translations.chauffeur.portal.welcome}, {user?.name || ''}</h1>
-            <button class="logout-button" on:click={handleLogout}>
+            <button class="logout-button" onclick={handleLogout}>
                 {translations.chauffeur.portal.logout}
             </button>
         </div>
@@ -142,7 +150,7 @@
         {:else if error}
             <div class="error-message">
                 {error}
-                <button on:click={() => loadEvents()}>
+                <button onclick={() => loadEvents()}>
                     {translations.chauffeur.portal.retry}
                 </button>
             </div>

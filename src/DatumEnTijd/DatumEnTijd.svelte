@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { onMount, onDestroy, getContext } from "svelte";
   import { fade, scale } from 'svelte/transition';
   import dateImage from '../images/Date.png?url';
@@ -228,24 +230,6 @@
     loadFormData();
   });
 
-  // Watch for date/time changes
-  $: {
-    if (startDate && endDate && startTime && endTime) {
-      const start = new Date(`${startDate}T${startTime}`);
-      const end = new Date(`${endDate}T${endTime}`);
-      
-      // Ensure end date/time is not before start date/time
-      if (end < start) {
-        endDate = startDate;
-        endTime = startTime;
-      }
-      
-      // Calculate event days and update prices
-      eventDays = calculateEventDays(startDate, endDate);
-      calculateTotalPrice();
-      calculateTransportFee();
-    }
-  }
 
   onDestroy(() => {
     if (dateRangePicker) {
@@ -394,11 +378,6 @@
     }
   }
 
-  $: if (!hasDifferentInvoiceContact) {
-    invoiceContactName = contactName;
-    invoiceContactEmail = email;
-    invoiceContactPhone = contactPhone;
-  }
 
   async function handleAddressInput(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -502,19 +481,7 @@
     transportFee = calculatedDistance * (eventDays > 1 ? 4 : 2);
   }
 
-  // Update transport fee when event days change
-  $: {
-    if (eventDays && calculatedDistance > 0) {
-      calculateTransportFee();
-    }
-  }
 
-  // Calculate event days when dates change
-  $: {
-    if (startDate && endDate) {
-      eventDays = calculateEventDays(startDate, endDate);
-    }
-  }
 
   function formatCurrency(value: number): string {
     return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(value);
@@ -627,45 +594,7 @@
     }
   }
 
-  // Reactive statement to update print price based on date changes
-  $: if (startDate && endDate) {
-    if (printOptionSelected) {
-      const days = calculateEventDays(startDate, endDate);
-      extrasList = extrasList.map(extra => {
-        if (extra.id === 'print') {
-          return { ...extra, price: 500 * days };
-        }
-        return extra;
-      });
-      calculateExtrasPrice();
-    }
-  }
 
-  // Reactive statement to update transport fee based on date changes
-  $: {
-    if (startDate && endDate && startTime && endTime) {
-      const start = new Date(`${startDate}T${startTime}`);
-      const end = new Date(`${endDate}T${endTime}`);
-      const days = calculateEventDays(startDate, endDate);
-      totalPrice = calculateRentalPrice(days);
-      
-      // Recalculate transport fee when dates change
-      if (calculatedDistance > 0 && calculatedDistance <= 300) {
-        const totalDistance = eventDays > 1 ? calculatedDistance * 4 : calculatedDistance * 2;
-        transportFee = totalDistance;
-
-      }
-
-      // Update print option price if selected
-      if (printOptionSelected) {
-        const printExtra = extrasList.find(e => e.id === 'print');
-        if (printExtra) {
-          printExtra.price = 500 * days;
-          calculateExtrasPrice();
-        }
-      }
-    }
-  }
 
   function calculateTotalPrice() {
     if (startDate && endDate) {
@@ -715,14 +644,6 @@
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 
-  $: {
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const days = calculateEventDays(startDate, endDate);
-      totalPrice = calculateRentalPrice(days);
-    }
-  }
 
   function calculateDays(start: Date, end: Date): number {
     const oneDay = 24 * 60 * 60 * 1000;
@@ -737,14 +658,6 @@
     return 950 + 750 + ((days - 2) * 100);  // First + second + continuation days
   }
 
-  $: {
-    if (startDate && endDate && startTime && endTime) {
-      const start = new Date(`${startDate}T${startTime}`);
-      const end = new Date(`${endDate}T${endTime}`);
-      const days = calculateDays(start, end);
-      totalPrice = calculateRentalPrice(days);
-    }
-  }
 
   function handleCouponCode() {
     couponError = '';
@@ -775,20 +688,8 @@
     calculateTotalPrice();
   }
 
-  // Recalculate coupon discount when Theme or Branding changes
-  $: {
-    if (themaAdded !== undefined || brandingAdded !== undefined) {
-      handleCouponCode();
-    }
-  }
 
-  $: totalPrice = calculateRentalPrice(eventDays) + extrasPrice + transportFee;
-  $: vatAmount = totalPrice * 0.21;
-  $: totalPriceInclVat = totalPrice + vatAmount;
 
-  $: priceBeforeVat = totalPrice - couponDiscount;
-  $: vatAmountAfterDiscount = priceBeforeVat * 0.21;
-  $: totalPriceWithDiscountInclVat = priceBeforeVat + vatAmountAfterDiscount;
 
   // Form validation
   let formValidation = {
@@ -806,7 +707,7 @@
     }
   };
 
-  let formErrors = [];
+  let formErrors = $state([]);
 
   function getMissingFields() {
     formErrors = [];
@@ -886,18 +787,6 @@
     );
   }
 
-  // Watch for changes in form fields and validate
-  $: {
-    if (email) {
-      emailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Invalid email format';
-    }
-    if (invoiceContactEmail && hasDifferentInvoiceContact) {
-      invoiceEmailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceContactEmail) ? '' : 'Invalid email format';
-    }
-    if (contactPhone) {
-      phoneError = validatePhone(contactPhone) ? '' : 'Invalid phone number';
-    }
-  }
 
   // Handle form submission
   async function handleSubmit(event) {
@@ -999,17 +888,6 @@
     }, 250);
   }
 
-  // Save form data whenever relevant values change
-  $: {
-    if (startDate || endDate || startTime || endTime || eventName || locationName || 
-        deliveryAddress || deliveryBusinessName || deliveryStreet || deliveryPostalCode || deliveryCity || deliveryCountry || 
-        language || brandingAdded || themaAdded || getRoastedAdded || 
-        keynoteAdded || printOptionSelected || selectedLanguages.length || selectedLanguage ||
-        transportFee || extrasPrice || extrasList.length || totalPrice || calculatedDistance ||
-        invoiceAddressInput) {
-      saveFormData();
-    }
-  }
 
   // Form data handling
   async function saveFormData() {
@@ -1188,11 +1066,11 @@
 
   // Form variables
   let className = "";
-  let startDate = "2025-01-15";
-  let startTime = "09:00";
-  let endDate = "2025-01-15";
-  let endTime = "17:00";
-  let eventName = ""; 
+  let startDate = $state("2025-01-15");
+  let startTime = $state("09:00");
+  let endDate = $state("2025-01-15");
+  let endTime = $state("17:00");
+  let eventName = $state(""); 
   let basePrice = 1500;
   let languagePrice = 125; // Price per additional language
   let brandingPrice = 750;
@@ -1200,27 +1078,27 @@
   let getRoastedPrice = 400;
   let keynotePrice = 750;
   let printPrice = 250;
-  let totalPrice = 0;
-  let extrasPrice = 0;
-  let couponDiscount = 0;
+  let totalPrice = $state(0);
+  let extrasPrice = $state(0);
+  let couponDiscount = $state(0);
 
   let locationName = "";
   let suggestions = [];
   let language = '';
-  let brandingAdded = false;
-  let themaAdded = false;
-  let getRoastedAdded = false;
-  let keynoteAdded = false;
-  let printOptionSelected = false;
-  let printOption = false; // Added printOption state variable
-  let eventDays = 1;
-  let extrasList = [];
-  let selectedLanguages = [];
-  let selectedLanguage = 'Empty';
+  let brandingAdded = $state(false);
+  let themaAdded = $state(false);
+  let getRoastedAdded = $state(false);
+  let keynoteAdded = $state(false);
+  let printOptionSelected = $state(false);
+  let printOption = $state(false); // Added printOption state variable
+  let eventDays = $state(1);
+  let extrasList = $state([]);
+  let selectedLanguages = $state([]);
+  let selectedLanguage = $state('Empty');
   let currentPath = '';
   let primaryLanguage = "Dutch";
-  let isSubmitting = false;
-  let submitError = '';
+  let isSubmitting = $state(false);
+  let submitError = $state('');
   let productIds = {
     poemBooth: 'recPoEmBoOtH123',        // Base product
     eventPartner: 'recEvTpArTnEr456',     // Event partner
@@ -1235,37 +1113,37 @@
   };
 
   // Delivery address fields
-  let deliveryBusinessName = '';
-  let deliveryStreet = '';
-  let deliveryPostalCode = '';
-  let deliveryCity = '';
-  let deliveryCountry = '';
+  let deliveryBusinessName = $state('');
+  let deliveryStreet = $state('');
+  let deliveryPostalCode = $state('');
+  let deliveryCity = $state('');
+  let deliveryCountry = $state('');
 
   // Company and contact info
-  let accountName = '';
-  let address = '';
-  let postalCode = '';
-  let city = '';
-  let country = ''; 
-  let vatNumber = '';
-  let contactName = '';
-  let email = '';
-  let emailError = '';
-  let contactPhone = '';
-  let phoneError = '';
-  let invoiceContactEmail = '';
-  let invoiceEmailError = '';
-  let invoiceContactName = '';
-  let invoiceContactPhone = '';
-  let hasDifferentInvoiceContact = false;
+  let accountName = $state('');
+  let address = $state('');
+  let postalCode = $state('');
+  let city = $state('');
+  let country = $state(''); 
+  let vatNumber = $state('');
+  let contactName = $state('');
+  let email = $state('');
+  let emailError = $state('');
+  let contactPhone = $state('');
+  let phoneError = $state('');
+  let invoiceContactEmail = $state('');
+  let invoiceEmailError = $state('');
+  let invoiceContactName = $state('');
+  let invoiceContactPhone = $state('');
+  let hasDifferentInvoiceContact = $state(false);
   let reservationType = 'info';
   let isDefinitive = false;
-  let submitSuccess = false;
-  let poNumber = '';
+  let submitSuccess = $state(false);
+  let poNumber = $state('');
   let dateRangePicker;
-  let languageTranslations = {};
-  let couponCode = '';
-  let couponError = '';
+  let languageTranslations = $state({});
+  let couponCode = $state('');
+  let couponError = $state('');
 
   // Address components
   let addressComponents = {
@@ -1277,9 +1155,9 @@
   };
 
   // Terms and conditions
-  let termsAccepted = false;
-  let dimensionsAccepted = false;
-  let paymentAccepted = false;
+  let termsAccepted = $state(false);
+  let dimensionsAccepted = $state(false);
+  let paymentAccepted = $state(false);
 
   // Invoice address
   let invoiceAddressInput = '';
@@ -1292,11 +1170,11 @@
   };
 
   // Map related state
-  let staticMapUrl = '';
-  let isMapLoading = false;
-  let mapImageLoaded = false;
-  let showAddressFields = false;
-  let destinationCoordinates = [];
+  let staticMapUrl = $state('');
+  let isMapLoading = $state(false);
+  let mapImageLoaded = $state(false);
+  let showAddressFields = $state(false);
+  let destinationCoordinates = $state([]);
   let originCoordinates = [];
   let originAddress = 'Gedempt Hamerkanaal 111, 1021KP Amsterdam, The Netherlands';
   let selectedCoordinates = [];
@@ -1304,8 +1182,8 @@
   let routeGeometry = null;
   
   // Distance and transport fee calculations
-  let calculatedDistance = 0;
-  let transportFee = 0;
+  let calculatedDistance = $state(0);
+  let transportFee = $state(0);
 
   async function updateRouteVisualization() {
     try {
@@ -1547,6 +1425,136 @@
     'AT': 'Austria',
     'NO': 'Norway'
   };
+  // Watch for date/time changes
+  run(() => {
+    if (startDate && endDate && startTime && endTime) {
+      const start = new Date(`${startDate}T${startTime}`);
+      const end = new Date(`${endDate}T${endTime}`);
+      
+      // Ensure end date/time is not before start date/time
+      if (end < start) {
+        endDate = startDate;
+        endTime = startTime;
+      }
+      
+      // Calculate event days and update prices
+      eventDays = calculateEventDays(startDate, endDate);
+      calculateTotalPrice();
+      calculateTransportFee();
+    }
+  });
+  run(() => {
+    if (!hasDifferentInvoiceContact) {
+      invoiceContactName = contactName;
+      invoiceContactEmail = email;
+      invoiceContactPhone = contactPhone;
+    }
+  });
+  // Calculate event days when dates change
+  run(() => {
+    if (startDate && endDate) {
+      eventDays = calculateEventDays(startDate, endDate);
+    }
+  });
+  // Update transport fee when event days change
+  run(() => {
+    if (eventDays && calculatedDistance > 0) {
+      calculateTransportFee();
+    }
+  });
+  // Reactive statement to update print price based on date changes
+  run(() => {
+    if (startDate && endDate) {
+      if (printOptionSelected) {
+        const days = calculateEventDays(startDate, endDate);
+        extrasList = extrasList.map(extra => {
+          if (extra.id === 'print') {
+            return { ...extra, price: 500 * days };
+          }
+          return extra;
+        });
+        calculateExtrasPrice();
+      }
+    }
+  });
+  // Reactive statement to update transport fee based on date changes
+  run(() => {
+    if (startDate && endDate && startTime && endTime) {
+      const start = new Date(`${startDate}T${startTime}`);
+      const end = new Date(`${endDate}T${endTime}`);
+      const days = calculateEventDays(startDate, endDate);
+      totalPrice = calculateRentalPrice(days);
+      
+      // Recalculate transport fee when dates change
+      if (calculatedDistance > 0 && calculatedDistance <= 300) {
+        const totalDistance = eventDays > 1 ? calculatedDistance * 4 : calculatedDistance * 2;
+        transportFee = totalDistance;
+
+      }
+
+      // Update print option price if selected
+      if (printOptionSelected) {
+        const printExtra = extrasList.find(e => e.id === 'print');
+        if (printExtra) {
+          printExtra.price = 500 * days;
+          calculateExtrasPrice();
+        }
+      }
+    }
+  });
+  run(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const days = calculateEventDays(startDate, endDate);
+      totalPrice = calculateRentalPrice(days);
+    }
+  });
+  run(() => {
+    if (startDate && endDate && startTime && endTime) {
+      const start = new Date(`${startDate}T${startTime}`);
+      const end = new Date(`${endDate}T${endTime}`);
+      const days = calculateDays(start, end);
+      totalPrice = calculateRentalPrice(days);
+    }
+  });
+  // Recalculate coupon discount when Theme or Branding changes
+  run(() => {
+    if (themaAdded !== undefined || brandingAdded !== undefined) {
+      handleCouponCode();
+    }
+  });
+  run(() => {
+    totalPrice = calculateRentalPrice(eventDays) + extrasPrice + transportFee;
+  });
+  let vatAmount = $derived(totalPrice * 0.21);
+  let totalPriceInclVat = $derived(totalPrice + vatAmount);
+  let priceBeforeVat = $derived(totalPrice - couponDiscount);
+  let vatAmountAfterDiscount = $derived(priceBeforeVat * 0.21);
+  let totalPriceWithDiscountInclVat = $derived(priceBeforeVat + vatAmountAfterDiscount);
+  // Watch for changes in form fields and validate
+  run(() => {
+    if (email) {
+      emailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Invalid email format';
+    }
+    if (invoiceContactEmail && hasDifferentInvoiceContact) {
+      invoiceEmailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceContactEmail) ? '' : 'Invalid email format';
+    }
+    if (contactPhone) {
+      phoneError = validatePhone(contactPhone) ? '' : 'Invalid phone number';
+    }
+  });
+  // Save form data whenever relevant values change
+  run(() => {
+    if (startDate || endDate || startTime || endTime || eventName || locationName || 
+        deliveryAddress || deliveryBusinessName || deliveryStreet || deliveryPostalCode || deliveryCity || deliveryCountry || 
+        language || brandingAdded || themaAdded || getRoastedAdded || 
+        keynoteAdded || printOptionSelected || selectedLanguages.length || selectedLanguage ||
+        transportFee || extrasPrice || extrasList.length || totalPrice || calculatedDistance ||
+        invoiceAddressInput) {
+      saveFormData();
+    }
+  });
 </script>
 
 <style>
@@ -1775,11 +1783,11 @@
             class:visible={mapImageLoaded}
             src={staticMapUrl} 
             alt="Route map"
-            on:load={() => {
+            onload={() => {
               mapImageLoaded = true;
               isMapLoading = false;
             }}
-            on:error={() => {
+            onerror={() => {
               console.error('Error loading map image');
               isMapLoading = false;
             }}
@@ -1920,7 +1928,7 @@
         <div class="description-text">
           <div class="language-selection-container">
             <div class={'dropdown-language ' + className}>
-              <select class="language-select" on:change={handleLanguageChange} bind:value={selectedLanguage}>
+              <select class="language-select" onchange={handleLanguageChange} bind:value={selectedLanguage}>
                 <option value="Empty">{getTranslation('extras.language.select')}</option>
                 {#each Object.keys(languageTranslations) as lang}
                   <option value={lang}>{languageTranslations[lang]}</option>
@@ -1932,7 +1940,7 @@
                 {#each selectedLanguages as language}
                   <div class="language-tag">
                     {languageTranslations[language]}
-                    <button class="remove-language" on:click={() => removeLanguage(language)}>×</button>
+                    <button class="remove-language" onclick={() => removeLanguage(language)}>×</button>
                   </div>
                 {/each}
               </div>
@@ -1966,7 +1974,7 @@
           type="button"
           class="button" 
           class:selected={printOption}
-          on:click={() => printOption = !printOption}
+          onclick={() => printOption = !printOption}
         >
           {printOption ? getTranslation('extras.printOption.remove') : getTranslation('extras.printOption.add')}
         </button>
@@ -1988,8 +1996,8 @@
           type="button"
           class="button" 
           class:selected={brandingAdded} 
-          on:click={toggleBranding}
-          on:keydown={(e) => e.key === 'Enter' && toggleBranding()}
+          onclick={toggleBranding}
+          onkeydown={(e) => e.key === 'Enter' && toggleBranding()}
         >
           {brandingAdded ? getTranslation('common.remove') : getTranslation('common.add')}
         </button>
@@ -2011,8 +2019,8 @@
           type="button"
           class="button" 
           class:selected={themaAdded} 
-          on:click={toggleThema}
-          on:keydown={(e) => e.key === 'Enter' && toggleThema()}
+          onclick={toggleThema}
+          onkeydown={(e) => e.key === 'Enter' && toggleThema()}
         >
           {themaAdded ? getTranslation('common.remove') : getTranslation('common.add')}
         </button>
@@ -2034,8 +2042,8 @@
           type="button"
           class="button" 
           class:selected={getRoastedAdded} 
-          on:click={toggleGetRoasted}
-          on:keydown={(e) => e.key === 'Enter' && toggleGetRoasted()}
+          onclick={toggleGetRoasted}
+          onkeydown={(e) => e.key === 'Enter' && toggleGetRoasted()}
         >
           {getRoastedAdded ? getTranslation('common.remove') : getTranslation('common.add')}
         </button>
@@ -2057,8 +2065,8 @@
           type="button"
           class="button" 
           class:selected={keynoteAdded} 
-          on:click={toggleKeynote}
-          on:keydown={(e) => e.key === 'Enter' && toggleKeynote()}
+          onclick={toggleKeynote}
+          onkeydown={(e) => e.key === 'Enter' && toggleKeynote()}
         >
           {keynoteAdded ? getTranslation('common.remove') : getTranslation('common.add')}
         </button>
@@ -2077,7 +2085,7 @@
           <input 
             type="text" 
             bind:value={couponCode}
-            on:input={handleCouponCode}
+            oninput={handleCouponCode}
             placeholder={getTranslation('coupon.placeholder')}
             class="text"
             class:error={couponError}
@@ -2126,7 +2134,7 @@
           <td>1</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={() => removeLanguage(selectedLanguages[0])}>×</button>
+              <button class="remove-icon" onclick={() => removeLanguage(selectedLanguages[0])}>×</button>
               <span>{languageTranslations[selectedLanguages[0]]} {getTranslation('languages.complimentary')}</span>
             </div>
           </td>
@@ -2138,7 +2146,7 @@
           <td>1</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={() => removeLanguage(language)}>×</button>
+              <button class="remove-icon" onclick={() => removeLanguage(language)}>×</button>
               <span>{languageTranslations[language]}</span>
             </div>
           </td>
@@ -2150,7 +2158,7 @@
           <td>{calculateEventDays(startDate, endDate)}</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={() => printOption = !printOption}>×</button>
+              <button class="remove-icon" onclick={() => printOption = !printOption}>×</button>
               <span>{getTranslation('extras.printOption.title')}</span>
             </div>
           </td>
@@ -2162,7 +2170,7 @@
           <td>1</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={toggleBranding}>×</button>
+              <button class="remove-icon" onclick={toggleBranding}>×</button>
               <span>{getTranslation('extras.branding.title')}</span>
             </div>
           </td>
@@ -2174,7 +2182,7 @@
           <td>1</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={toggleThema}>×</button>
+              <button class="remove-icon" onclick={toggleThema}>×</button>
               <span>{getTranslation('extras.theme.title')}</span>
             </div>
           </td>
@@ -2186,7 +2194,7 @@
           <td>1</td>
           <td>
             <div class="item-with-remove">
-              <button class="remove-icon" on:click={toggleGetRoasted}>×</button>
+              <button class="remove-icon" onclick={toggleGetRoasted}>×</button>
               <span>{getTranslation('extras.getRoasted.title')}</span>
             </div>
           </td>
@@ -2224,7 +2232,7 @@
 
 <div class="inclusief">
   <h1 class="h1">{getTranslation('form.title')}</h1>
-  <form on:submit={handleSubmit}>
+  <form onsubmit={handleSubmit}>
     <div class="form-section">
       <div class="frame">
         <div class="frame-row">
@@ -2270,7 +2278,7 @@
               id="email" 
               name="email"
               bind:value={email}
-              on:input={handleEmailChange}
+              oninput={handleEmailChange}
               pattern="[^@\s]+@[^\s@]+\.[^\s@]+"
               required
               placeholder={getTranslation('form.emailPlaceholder')}

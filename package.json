@@ -12,13 +12,13 @@
   "devDependencies": {
     "@playwright/test": "^1.40.1",
     "@sveltejs/adapter-vercel": "^4.0.3",
-    "@sveltejs/kit": "^2.0.6",
-    "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6",
+    "@sveltejs/kit": "^2.5.27",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "@tsconfig/svelte": "^5.0.2",
     "sass": "^1.69.7",
-    "svelte-preprocess": "^5.0.4",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.10",
+    "svelte-preprocess": "^6.0.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.4",
     "vite-tsconfig-paths": "^4.2.3"
   },
   "dependencies": {
@@ -30,7 +30,7 @@
     "flatpickr": "^4.6.13",
     "ical-generator": "^6.0.1",
     "mapbox-gl": "^3.0.1",
-    "svelte": "^5.0.0-next.1"
+    "svelte": "^5.0.0"
   },
   "overrides": {
     "cookie": "^0.7.0",
@@ -40,8 +40,7 @@
     "inflight": "npm:lru-cache@^10.1.0",
     "npmlog": "^6.0.2",
     "gauge": "^4.0.4",
-    "are-we-there-yet": "^3.0.1",
-    "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6"
+    "are-we-there-yet": "^3.0.1"
   },
   "engines": {
     "node": "18.x"

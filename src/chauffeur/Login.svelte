@@ -3,12 +3,16 @@
     import { authStore } from '../stores/authStore';
     import { fade } from 'svelte/transition';
 
-    export let translations: any;
+    interface Props {
+        translations: any;
+    }
 
-    let email = '';
-    let password = '';
-    let error = '';
-    let isLoading = false;
+    let { translations }: Props = $props();
+
+    let email = $state('');
+    let password = $state('');
+    let error = $state('');
+    let isLoading = $state(false);
 
     async function handleSubmit(event: Event) {
         event.preventDefault();
@@ -51,7 +55,7 @@
 
         <h1 class="title">{translations.chauffeur.login.title}</h1>
         
-        <form on:submit={handleSubmit}>
+        <form onsubmit={handleSubmit}>
             <div class="form-group">
                 <label for="email" class="field-label">{translations.chauffeur.login.email}:</label>
                 <input 

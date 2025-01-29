@@ -4,8 +4,15 @@
   import '../styles.css';
   import 'mapbox-gl/dist/mapbox-gl.css';
 
-  /** @type {import('./$types').LayoutData} */
-  export let data;
+  
+  /**
+   * @typedef {Object} Props
+   * @property {import('./$types').LayoutData} data
+   * @property {import('svelte').Snippet} [children]
+   */
+
+  /** @type {Props} */
+  let { data, children } = $props();
 
   // Verify required data is present
   if (!data || !data.mapboxToken || !data.PUBLIC_API_TOKEN) {
@@ -83,4 +90,4 @@
   }
 </style>
 
-<slot />
+{@render children?.()}
