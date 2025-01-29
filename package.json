@@ -11,14 +11,14 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.1",
-    "@sveltejs/adapter-vercel": "^3.0.3",
+    "@sveltejs/adapter-vercel": "^3.0.0",
     "@sveltejs/kit": "^1.27.6",
-    "@sveltejs/vite-plugin-svelte": "^2.5.3",
     "@tsconfig/svelte": "^5.0.2",
     "sass": "^1.69.7",
-    "svelte": "^4.2.7",
+    "svelte-preprocess": "^5.0.4",
     "typescript": "^5.3.3",
-    "vite": "^4.5.1"
+    "vite": "^4.5.1",
+    "vite-tsconfig-paths": "^4.2.3"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-geocoder": "^5.0.1",
@@ -29,9 +29,7 @@
     "flatpickr": "^4.6.13",
     "flowbite-svelte": "^0.44.20",
     "ical-generator": "^6.0.1",
-    "mapbox-gl": "^3.0.1",
-    "svelte-preprocess": "^5.0.4",
-    "vite-tsconfig-paths": "^4.2.3"
+    "mapbox-gl": "^3.0.1"
   },
   "overrides": {
     "cookie": "^0.7.0",
