@@ -166,42 +166,6 @@ class Table {
     }
 }
 
-// Helper functions
-export function formatRecord(record) {
-    if (!record) return null;
-    return {
-        id: record.id,
-        ...record.fields
-    };
-}
-
-export function formatRecords(records) {
-    return records.map(formatRecord);
-}
-
-export function handleAirtableError(error) {
-    console.error('Airtable error:', error);
-    
-    if (error.name === 'Error' && error.statusCode) {
-        // Handle Airtable API errors
-        const message = error.message || 'Unknown Airtable error';
-        const statusCode = error.statusCode;
-        
-        return {
-            error: true,
-            message,
-            statusCode
-        };
-    }
-    
-    // Handle other errors
-    return {
-        error: true,
-        message: error.message || 'Internal server error',
-        statusCode: 500
-    };
-}
-
 // Export base with table functions
 export const base = {
     Organizations: new Table('Organizations'),
@@ -211,5 +175,39 @@ export const base = {
     Products: new Table('Products'),
     ProductGroups: new Table('ProductGroups'),
     Availability: new Table('Availability'),
-    Configuration: new Table('Configuration')
+    Configuration: new Table('Configuration'),
+
+    formatRecord(record) {
+        if (!record) return null;
+        return {
+            id: record.id,
+            ...record.fields
+        };
+    },
+
+    formatRecords(records) {
+        return records.map(this.formatRecord);
+    },
+
+    handleAirtableError(error) {
+        console.error('Airtable error:', error);
+        
+        if (error.error?.type === 'AUTHENTICATION_REQUIRED') {
+            throw new Error('Invalid Airtable authentication token');
+        }
+        
+        if (error.error?.type === 'NOT_FOUND') {
+            throw new Error('Record or table not found');
+        }
+        
+        if (error.error?.type === 'INVALID_PERMISSIONS') {
+            throw new Error('Insufficient permissions to perform this operation');
+        }
+        
+        if (error.error?.type === 'RATE_LIMIT_EXCEEDED') {
+            throw new Error('Airtable rate limit exceeded. Please try again later.');
+        }
+        
+        throw new Error(error.error?.message || 'An error occurred while communicating with Airtable');
+    }
 };
