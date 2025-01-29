@@ -56,8 +56,13 @@ const products = {
     }
 };
 
-export const GET: RequestHandler = async ({ params, url }) => {
-    console.log('Products API called with params:', params);
+export const GET: RequestHandler = async ({ params, url, request }) => {
+    console.log('Products API called with:');
+    console.log('- URL:', url.toString());
+    console.log('- Base URL:', url.origin);
+    console.log('- Path:', url.pathname);
+    console.log('- Headers:', Object.fromEntries(request.headers.entries()));
+    console.log('- Params:', params);
     console.log('Available products:', Object.keys(products));
     
     try {
@@ -71,16 +76,30 @@ export const GET: RequestHandler = async ({ params, url }) => {
             console.log('Product not found for slug:', slug);
             return json(
                 { error: `Product not found: ${slug}` },
-                { status: 404 }
+                { 
+                    status: 404,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
         }
 
-        return json(product);
+        return json(product, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     } catch (error) {
         console.error('Error in products API:', error);
         return json(
             { error: 'Internal server error' },
-            { status: 500 }
+            { 
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
         );
     }
 };
