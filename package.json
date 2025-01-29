@@ -1,6 +1,7 @@
 {
   "name": "vite-svelte-starter",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "vite dev",
@@ -34,7 +35,13 @@
   },
   "overrides": {
     "cookie": "^0.7.0",
-    "path-to-regexp": "^6.2.3"
+    "path-to-regexp": "^6.2.3",
+    "glob": "^10.3.10",
+    "rimraf": "^5.0.5",
+    "inflight": "npm:lru-cache@^10.1.0",
+    "npmlog": "^6.0.2",
+    "gauge": "^4.0.4",
+    "are-we-there-yet": "^3.0.1"
   },
   "engines": {
     "node": "18.x"
