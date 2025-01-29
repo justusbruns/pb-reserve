@@ -7,6 +7,7 @@
     import { authStore } from '../stores/authStore';
     import EventCard from './EventCard.svelte';
     import Login from './Login.svelte';
+    import { apiRequest } from '$lib/client/apiClient';
 
     interface Props {
         translations: any;
@@ -21,8 +22,6 @@
     let hasLoadedEvents = $state(false);
 
     const ORIGIN_ADDRESS = 'Gedempt Hamerkanaal 111, Amsterdam';
-    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
 
     onMount(async () => {
         if (isAuthenticated) {
@@ -68,50 +67,41 @@
 
     async function calculateTravelTime(origin: string, destination: string): Promise<number> {
         try {
-            // Get coordinates for origin
-            const originResponse = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-                    origin
-                )}.json?access_token=${MAPBOX_TOKEN}`
-            );
-            if (!originResponse.ok) {
-                throw new Error(`Error fetching origin coordinates: ${originResponse.status}`);
-            }
-            const originData = await originResponse.json();
-            if (!originData.features || originData.features.length === 0) {
+            // Get coordinates for origin using our secure server endpoint
+            const originCoords = await apiRequest('/api/geocoding', {
+                method: 'GET',
+                params: { address: origin }
+            });
+            if (!originCoords?.features?.length) {
                 throw new Error('No coordinates found for origin address');
             }
-            const originCoords = originData.features[0].geometry.coordinates;
 
-            // Get coordinates for destination (delivery address)
-            const destResponse = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-                    destination
-                )}.json?access_token=${MAPBOX_TOKEN}`
-            );
-            if (!destResponse.ok) {
-                throw new Error(`Error fetching destination coordinates: ${destResponse.status}`);
-            }
-            const destData = await destResponse.json();
-            if (!destData.features || destData.features.length === 0) {
+            // Get coordinates for destination using our secure server endpoint
+            const destCoords = await apiRequest('/api/geocoding', {
+                method: 'GET',
+                params: { address: destination }
+            });
+            if (!destCoords?.features?.length) {
                 throw new Error('No coordinates found for delivery address');
             }
-            const destCoords = destData.features[0].geometry.coordinates;
 
-            // Get directions
-            const directionsResponse = await fetch(
-                `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?access_token=${MAPBOX_TOKEN}`
-            );
-            if (!directionsResponse.ok) {
-                throw new Error(`Error fetching directions: ${directionsResponse.status}`);
-            }
-            const directionsData = await directionsResponse.json();
-            if (!directionsData.routes || directionsData.routes.length === 0) {
+            // Get directions using our secure server endpoint
+            const originLocation = originCoords.features[0].geometry.coordinates;
+            const destLocation = destCoords.features[0].geometry.coordinates;
+            const directions = await apiRequest('/api/directions', {
+                method: 'GET',
+                params: {
+                    origin: `${originLocation[0]},${originLocation[1]}`,
+                    destination: `${destLocation[0]},${destLocation[1]}`
+                }
+            });
+
+            if (!directions?.routes?.length) {
                 throw new Error('No route found between addresses');
             }
 
             // Return duration in minutes
-            return directionsData.routes[0].duration / 60;
+            return directions.routes[0].duration / 60;
         } catch (err) {
             console.error('Error calculating travel time:', err);
             return null;

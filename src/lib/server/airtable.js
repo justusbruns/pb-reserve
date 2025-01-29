@@ -3,7 +3,18 @@ let envVars;
 try {
     const { env } = await import('$env/dynamic/private');
     envVars = env;
+    
+    // Validate required environment variables
+    if (!envVars.AIRTABLE_PAT) {
+        throw new Error('AIRTABLE_PAT environment variable is not set');
+    }
+    if (!envVars.AIRTABLE_BASE_ID) {
+        throw new Error('AIRTABLE_BASE_ID environment variable is not set');
+    }
+    
+    console.log('Airtable environment variables loaded successfully');
 } catch (error) {
+    console.error('Error loading environment variables:', error);
     envVars = process.env;
 }
 
@@ -30,64 +41,89 @@ async function airtableRequest(endpoint, options = {}) {
     const baseUrl = 'https://api.airtable.com/v0';
     const url = `${baseUrl}/${envVars.AIRTABLE_BASE_ID}${endpoint}`;
     
-    console.log('Making Airtable request:', {
-        url,
-        method: options.method || 'GET',
-        headers: {
-            'Authorization': 'Bearer [PAT]', // Don't log the actual token
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
-    });
-    
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            'Authorization': `Bearer ${envVars.AIRTABLE_PAT}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        console.error('Airtable request failed:', {
-            status: response.status,
-            statusText: response.statusText,
-            error
-        });
-        throw new Error(error.error?.message || response.statusText);
+    if (!envVars.AIRTABLE_PAT) {
+        console.error('AIRTABLE_PAT is missing');
+        throw new Error('AIRTABLE_PAT environment variable is not set');
     }
 
-    const data = await response.json();
-    console.log('Airtable response:', data);
-    return data;
+    if (!envVars.AIRTABLE_BASE_ID) {
+        console.error('AIRTABLE_BASE_ID is missing');
+        throw new Error('AIRTABLE_BASE_ID environment variable is not set');
+    }
+    
+    console.log('Making Airtable request:', {
+        url: url.replace(envVars.AIRTABLE_BASE_ID, '[BASE_ID]'),
+        method: options.method || 'GET',
+        endpoint,
+        headers: options.headers ? Object.keys(options.headers) : undefined,
+        body: options.body ? 'Present' : 'None'
+    });
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${envVars.AIRTABLE_PAT}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: 'Could not parse error response' };
+            }
+
+            console.error('Airtable request failed:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorData,
+                endpoint,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+            
+            throw new Error(
+                errorData?.error?.message || 
+                `Airtable request failed: ${response.status} ${response.statusText}`
+            );
+        }
+
+        const data = await response.json();
+        console.log('Airtable response successful:', {
+            endpoint,
+            recordCount: Array.isArray(data.records) ? data.records.length : 'N/A',
+            dataKeys: Object.keys(data)
+        });
+        return data;
+    } catch (error) {
+        console.error('Error making Airtable request:', {
+            error: error.message,
+            name: error.name,
+            stack: error.stack,
+            endpoint
+        });
+        throw error;
+    }
 }
 
 // Base class to handle table operations
 class Table {
     constructor(tableName) {
+        if (!TABLES[tableName]) {
+            throw new Error(`Invalid table name: ${tableName}`);
+        }
         this.tableName = TABLES[tableName];
         console.log(`Initialized table: ${tableName} with ID: ${this.tableName}`);
     }
 
     async create(fields) {
         console.log(`Creating record in ${this.tableName}:`, fields);
-        const response = await airtableRequest(`/${this.tableName}`, {
+        return airtableRequest(`/${this.tableName}`, {
             method: 'POST',
-            body: JSON.stringify({
-                records: [{
-                    fields
-                }]
-            })
-        });
-        return response.records[0];
-    }
-
-    async destroy(recordId) {
-        console.log(`Deleting record ${recordId} from ${this.tableName}`);
-        return airtableRequest(`/${this.tableName}/${recordId}`, {
-            method: 'DELETE'
+            body: JSON.stringify({ fields })
         });
     }
 
@@ -98,71 +134,29 @@ class Table {
 
     async select(params = {}) {
         console.log(`Selecting records from ${this.tableName}:`, params);
-        const queryParams = new URLSearchParams();
-        
-        if (params.maxRecords) {
-            queryParams.append('maxRecords', params.maxRecords);
-        }
-        if (params.view) {
-            queryParams.append('view', params.view);
-        }
-        if (params.filterByFormula) {
-            queryParams.append('filterByFormula', params.filterByFormula);
-        }
-        if (params.sort) {
-            queryParams.append('sort', JSON.stringify(params.sort));
-        }
-        if (params.offset) {
-            queryParams.append('offset', params.offset);
-        }
-
-        const queryString = queryParams.toString();
-        return airtableRequest(`/${this.tableName}${queryString ? `?${queryString}` : ''}`);
+        const queryParams = new URLSearchParams(params).toString();
+        const endpoint = `/${this.tableName}${queryParams ? `?${queryParams}` : ''}`;
+        const response = await airtableRequest(endpoint);
+        return response.records || [];
     }
 
     async update(recordId, fields) {
         console.log(`Updating record ${recordId} in ${this.tableName}:`, fields);
-        const response = await airtableRequest(`/${this.tableName}/${recordId}`, {
+        return airtableRequest(`/${this.tableName}/${recordId}`, {
             method: 'PATCH',
-            body: JSON.stringify({
-                fields
-            })
+            body: JSON.stringify({ fields })
         });
-        return response;
     }
 
-    async createBatch(records) {
-        console.log(`Creating batch records in ${this.tableName}:`, records);
-        const response = await airtableRequest(`/${this.tableName}`, {
-            method: 'POST',
-            body: JSON.stringify({
-                records: records.map(fields => ({ fields }))
-            })
-        });
-        return response.records;
-    }
-
-    async updateBatch(records) {
-        console.log(`Updating batch records in ${this.tableName}:`, records);
-        const response = await airtableRequest(`/${this.tableName}`, {
-            method: 'PATCH',
-            body: JSON.stringify({
-                records: records.map(({ id, fields }) => ({
-                    id,
-                    fields
-                }))
-            })
-        });
-        return response.records;
-    }
-
-    async destroyBatch(recordIds) {
-        console.log(`Deleting batch records from ${this.tableName}:`, recordIds);
-        const queryParams = new URLSearchParams();
-        recordIds.forEach(id => queryParams.append('records[]', id));
-        return airtableRequest(`/${this.tableName}?${queryParams.toString()}`, {
+    async destroy(recordId) {
+        console.log(`Deleting record ${recordId} from ${this.tableName}`);
+        return airtableRequest(`/${this.tableName}/${recordId}`, {
             method: 'DELETE'
         });
+    }
+
+    async all() {
+        return this.select();
     }
 }
 
@@ -175,12 +169,15 @@ export const base = {
     Products: new Table('Products'),
     ProductGroups: new Table('ProductGroups'),
     Availability: new Table('Availability'),
-    Configuration: new Table('Configuration'),
+    Configuration: new Table('Configuration')
 };
 
 // Helper functions
 export function formatRecord(record) {
-    if (!record) return null;
+    if (!record) {
+        console.warn('Attempted to format null/undefined record');
+        return null;
+    }
     return {
         id: record.id,
         ...record.fields
@@ -188,23 +185,36 @@ export function formatRecord(record) {
 }
 
 export function formatRecords(records) {
-    return records.map(formatRecord);
+    if (!Array.isArray(records)) {
+        console.warn('formatRecords received non-array input:', records);
+        return [];
+    }
+    return records.map(formatRecord).filter(Boolean);
 }
 
 export function handleAirtableError(error) {
-    console.error('Airtable error:', error);
+    console.error('Handling Airtable error:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+    });
     
-    if (error.error === 'NOT_FOUND') {
-        return json({ error: 'Record not found' }, { status: 404 });
+    if (error.message.includes('AIRTABLE_PAT')) {
+        return {
+            error: 'Airtable authentication error. Please check your environment variables.',
+            status: 500
+        };
     }
     
-    if (error.error === 'INVALID_PERMISSIONS') {
-        return json({ error: 'Invalid permissions' }, { status: 403 });
+    if (error.message.includes('not found')) {
+        return {
+            error: 'Resource not found',
+            status: 404
+        };
     }
     
-    if (error.error === 'AUTHENTICATION_REQUIRED') {
-        return json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
-    return json({ error: 'Internal server error' }, { status: 500 });
+    return {
+        error: error.message || 'Internal server error',
+        status: 500
+    };
 }

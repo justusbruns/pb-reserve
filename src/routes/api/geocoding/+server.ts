@@ -48,63 +48,44 @@ export async function GET({ url }) {
         });
 
         const response = await fetch(`${mapboxUrl}?${params}`);
-        
+        const data = await response.json();
+
         if (!response.ok) {
-            console.error('Mapbox API error:', {
+            console.error('Mapbox API error:', data);
+            return json({ error: 'Geocoding service error', details: data }, {
                 status: response.status,
-                statusText: response.statusText,
-                body: await response.text()
+                headers: {
+                    'content-type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
             });
-            throw new Error(`Mapbox API error: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        console.log('Mapbox API response:', {
-            query: address,
-            featuresCount: data.features?.length,
-            firstFeature: data.features?.[0],
-            type: data.type,
-            attribution: data.attribution
-        });
-        
-        // Only return necessary data to minimize exposure
-        const features = data.features.map(feature => ({
-            id: feature.id,
-            type: feature.type,
-            place_type: feature.place_type,
-            place_name: feature.place_name,
-            text: feature.text,
-            center: feature.center,
-            context: feature.context?.map(ctx => ({
-                id: ctx.id,
-                text: ctx.text,
-                short_code: ctx.short_code,
-                wikidata: ctx.wikidata
-            }))
-        }));
-
-        console.log('Returning features:', JSON.stringify(features, null, 2));
-        return json({ features }, {
+        return json(data, {
             headers: {
                 'content-type': 'application/json',
-                'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+                'Cache-Control': 'public, max-age=3600'
             }
         });
     } catch (error) {
         console.error('Geocoding error:', error);
-        return json({ error: 'Geocoding service error' }, { status: 500 });
+        return json({ error: 'Geocoding service error', details: error.message }, {
+            status: 500,
+            headers: {
+                'content-type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
     }
 }
 
 // Reverse geocoding endpoint
 export async function POST({ request }) {
     try {
-        const { lng, lat } = await request.json();
-        console.log('Reverse geocoding request for coordinates:', { lng, lat });
+        const { coordinates } = await request.json();
         
-        if (!lng || !lat) {
-            console.error('Missing coordinates');
-            return json({ error: 'Longitude and latitude are required' }, { 
+        if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+            return json({ error: 'Invalid coordinates' }, { 
                 status: 400,
                 headers: {
                     'content-type': 'application/json',
@@ -114,7 +95,6 @@ export async function POST({ request }) {
         }
 
         if (!env.MAPBOX_TOKEN) {
-            console.error('MAPBOX_TOKEN environment variable is not set');
             return json({ error: 'Mapbox configuration error' }, { 
                 status: 500,
                 headers: {
@@ -124,36 +104,37 @@ export async function POST({ request }) {
             });
         }
 
-        const mapboxUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?` +
-            new URLSearchParams({
-                access_token: env.MAPBOX_TOKEN,
-                types: 'address',
-                limit: '1'
-            });
-            
-        console.log('Mapbox reverse geocoding URL:', mapboxUrl);
-        
-        const response = await fetch(mapboxUrl);
-        console.log('Mapbox response status:', response.status);
+        const [lng, lat] = coordinates;
+        const mapboxUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`;
+        const params = new URLSearchParams({
+            access_token: env.MAPBOX_TOKEN,
+            types: 'address',
+            limit: '1'
+        });
+
+        const response = await fetch(`${mapboxUrl}?${params}`);
+        const data = await response.json();
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Mapbox API error:', errorText);
-            throw new Error(`Mapbox API error: ${response.status} - ${errorText}`);
+            console.error('Mapbox API error:', data);
+            return json({ error: 'Reverse geocoding service error', details: data }, {
+                status: response.status,
+                headers: {
+                    'content-type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            });
         }
 
-        const data = await response.json();
-        console.log('Mapbox API response:', JSON.stringify(data, null, 2));
-        
         return json(data, {
             headers: {
                 'content-type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'public, max-age=3600'
             }
         });
     } catch (error) {
         console.error('Reverse geocoding error:', error);
-        return json({ error: 'Failed to reverse geocode coordinates', details: error.message }, { 
+        return json({ error: 'Reverse geocoding service error', details: error.message }, {
             status: 500,
             headers: {
                 'content-type': 'application/json',

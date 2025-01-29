@@ -1,54 +1,67 @@
 import { json } from '@sveltejs/kit';
+import jwt from 'jsonwebtoken';
 import { env } from '$env/dynamic/private';
+import { timingSafeEqual } from 'crypto';
+
+// Verify required environment variables at runtime
+function checkAuthConfig() {
+    const required = ['ADMIN_USER', 'ADMIN_PASSWORD', 'SESSION_SECRET'];
+    const missing = required.filter(key => !env[key]);
+    
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+}
 
 /**
- * Middleware to protect API endpoints
+ * Middleware to protect API endpoints using session-based authentication
  * @param {Request} request - The incoming request
  * @returns {Response|null} - Returns error response if unauthorized, null if authorized
  */
 export async function requireAuth(request) {
     try {
-        const authHeader = request.headers.get('Authorization');
-        
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return new Response(
-                JSON.stringify({ error: 'Authorization header missing or invalid' }),
-                {
-                    status: 401,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
+        // Check config at runtime
+        checkAuthConfig();
+
+        // Get session token from cookie
+        const cookies = request.headers.get('cookie');
+        if (!cookies) {
+            return json(
+                { error: 'No session cookie found' },
+                { status: 401 }
             );
         }
 
-        const token = authHeader.split(' ')[1];
-        
-        // In a real application, you would validate the token here
-        // For now, we're using a simple environment variable comparison
-        if (token !== env.API_TOKEN) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid token' }),
-                {
-                    status: 401,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
+        // Parse cookies to get session token
+        const sessionToken = cookies.split(';')
+            .map(cookie => cookie.trim())
+            .find(cookie => cookie.startsWith('session='))
+            ?.split('=')[1];
+
+        if (!sessionToken) {
+            return json(
+                { error: 'No session token found' },
+                { status: 401 }
             );
         }
 
-        return null; // Auth successful
+        // Verify JWT token
+        try {
+            const decoded = jwt.verify(sessionToken, env.SESSION_SECRET);
+            request.locals = { user: decoded };
+            return null;
+        } catch (error) {
+            console.error('Session token verification failed:', error);
+            return json(
+                { error: 'Invalid session token' },
+                { status: 401 }
+            );
+        }
     } catch (error) {
-        console.error('Auth error:', error);
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            {
-                status: 500,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
+        console.error('Authentication error:', error);
+        return json(
+            { error: 'Authentication failed', details: error.message },
+            { status: 500 }
         );
     }
 }
@@ -61,4 +74,61 @@ export async function requireAuth(request) {
  */
 export function hasRole(allowedRoles, userRole) {
     return allowedRoles.includes(userRole);
+}
+
+/**
+ * Create a new session for a user
+ * @param {object} user - User object containing id, username, and role
+ * @returns {string} - JWT token for the session
+ */
+export function createSession(user) {
+    try {
+        checkAuthConfig();
+        return jwt.sign(
+            {
+                username: user.username,
+                role: user.role
+            },
+            env.SESSION_SECRET,
+            { expiresIn: '24h' }
+        );
+    } catch (error) {
+        console.error('Failed to create session:', error);
+        throw error;
+    }
+}
+
+/**
+ * Validate admin credentials using timing-safe comparison
+ * @param {string} username - Admin username
+ * @param {string} password - Admin password
+ * @returns {object|null} - User object if valid, null if invalid
+ */
+export function validateAdmin(username, password) {
+    try {
+        checkAuthConfig();
+
+        // Use timing-safe comparison for both username and password
+        const usernameBuffer = Buffer.from(username);
+        const storedUsernameBuffer = Buffer.from(env.ADMIN_USER);
+        const passwordBuffer = Buffer.from(password);
+        const storedPasswordBuffer = Buffer.from(env.ADMIN_PASSWORD);
+
+        const usernameMatch = usernameBuffer.length === storedUsernameBuffer.length &&
+            timingSafeEqual(usernameBuffer, storedUsernameBuffer);
+        const passwordMatch = passwordBuffer.length === storedPasswordBuffer.length &&
+            timingSafeEqual(passwordBuffer, storedPasswordBuffer);
+
+        if (usernameMatch && passwordMatch) {
+            return {
+                username: env.ADMIN_USER,
+                role: 'admin'
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        throw error;
+    }
 }

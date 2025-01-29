@@ -1,15 +1,44 @@
 let apiToken: string | null = null;
 
-interface ApiRequestOptions extends RequestInit {
+interface ApiRequestOptions {
+    method?: string;
+    body?: any;
+    params?: Record<string, string>;
     headers?: Record<string, string>;
 }
 
+interface LoginCredentials {
+    username: string;
+    password: string;
+}
+
 /**
- * Get the API token from the server
+ * Login to get a session token
+ */
+export async function login(credentials: LoginCredentials): Promise<void> {
+    const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+    }
+}
+
+/**
+ * Get the API token using session authentication
  */
 async function getToken(): Promise<string> {
     if (!apiToken) {
         const response = await fetch('/api/auth');
+        if (!response.ok) {
+            throw new Error('Not authenticated');
+        }
         const data = await response.json();
         apiToken = data.token;
     }
@@ -18,24 +47,45 @@ async function getToken(): Promise<string> {
 
 /**
  * Make an authenticated API request
+ * @param endpoint - API endpoint path
+ * @param options - Request options
  */
-async function apiRequest(endpoint: string, options: ApiRequestOptions = {}): Promise<any> {
-    const token = await getToken();
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers,
-        'Authorization': `Bearer ${token}`
-    };
+export async function apiRequest(endpoint: string, options: ApiRequestOptions = {}) {
+    const {
+        method = 'GET',
+        body,
+        params = {},
+        headers = {}
+    } = options;
 
-    const response = await fetch(endpoint, {
-        ...options,
-        headers
+    // Build URL with query parameters
+    const url = new URL(endpoint, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, value);
     });
 
+    // Prepare request options
+    const requestOptions: RequestInit = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            ...headers
+        },
+        credentials: 'include' // Important: This ensures cookies are sent with the request
+    };
+
+    // Add body if present
+    if (body) {
+        requestOptions.body = JSON.stringify(body);
+    }
+
+    // Make the request
+    const response = await fetch(url.toString(), requestOptions);
+
+    // Handle response
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'API request failed');
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
     }
 
     return response.json();
@@ -55,5 +105,3 @@ export async function reverseGeocode(lng: number, lat: number): Promise<any> {
         body: JSON.stringify({ lng, lat })
     });
 }
-
-export { apiRequest };
