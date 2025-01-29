@@ -99,90 +99,125 @@
       }
 
       // Load product records
-      const poemBoothResponse = await fetch('/api/products/poem-booth-1');
-      const poemBoothRecord = await poemBoothResponse.json();
-      console.log('Poem Booth record:', poemBoothRecord);
-      
-      const eventPartnerResponse = await fetch('/api/products/eventpartner');
-      const eventPartnerRecord = await eventPartnerResponse.json();
-      console.log('Event Partner record:', eventPartnerRecord);
-      
-      const eventSpecialistResponse = await fetch('/api/products/eventspecialist');
-      const eventSpecialistRecord = await eventSpecialistResponse.json();
-      console.log('Event Specialist record:', eventSpecialistRecord);
-      
-      const brandingResponse = await fetch('/api/products/branding');
-      const brandingRecord = await brandingResponse.json();
-      console.log('Branding record:', brandingRecord);
-      
-      const themeResponse = await fetch('/api/products/theme');
-      const themeRecord = await themeResponse.json();
-      console.log('Theme record:', themeRecord);
-      
-      const standardPrinterResponse = await fetch('/api/products/printer-1');
-      const standardPrinterRecord = await standardPrinterResponse.json();
-      console.log('Printer record:', standardPrinterRecord);
-      
-      const roastResponse = await fetch('/api/products/roast');
-      const roastRecord = await roastResponse.json();
-      console.log('Roast record:', roastRecord);
-      
-      const transportResponse = await fetch('/api/products/transport');
-      const transportRecord = await transportResponse.json();
-      console.log('Transport record:', transportRecord);
-      
-      const languageResponse = await fetch('/api/products/extra-language');
-      const languageRecord = await languageResponse.json();
-      console.log('Language record:', languageRecord);
-
-      const keynoteResponse = await fetch('/api/products/keynote');
-      const keynoteRecord = await keynoteResponse.json();
-      console.log('Keynote record:', keynoteRecord);
-
-      // Store the record IDs
-      productIds = {
-        poemBooth: poemBoothRecord?.id,
-        eventPartner: eventPartnerRecord?.id,
-        eventSpecialist: eventSpecialistRecord?.id,
-        extraLanguage: languageRecord?.id,
-        branding: brandingRecord?.id,
-        theme: themeRecord?.id,
-        printer: standardPrinterRecord?.id,
-        roast: roastRecord?.id,
-        transport: transportRecord?.id,
-        keynote: keynoteRecord?.id
-      };
-
-      console.log('Final Product IDs:', productIds);
-
-      // Validate that we have all required product IDs
-      const missingProducts = Object.entries(productIds)
-        .filter(([key, value]) => !value)
-        .map(([key]) => key);
-
-      if (missingProducts.length > 0) {
-        console.error('Missing product IDs for:', missingProducts);
-        throw new Error(`Missing product IDs for: ${missingProducts.join(', ')}`);
-      }
-
-      // Set initial values
-      const initialDate = new Date();
-      initialDate.setDate(initialDate.getDate() + 7); // One week from now
-      
-      startDate = initialDate.toISOString().split('T')[0];
-      endDate = startDate;
-      startTime = "09:00";
-      endTime = "17:00";
-      
-      // Calculate initial price
-      totalPrice = 950; // Set default price for one day
-
-      return () => {
-        // Cleanup
-        if (geocoder) {
-          geocoder.destroy();
+      try {
+        const poemBoothResponse = await fetch('/api/products/poem-booth-1');
+        if (!poemBoothResponse.ok) {
+          throw new Error(`Failed to fetch poem booth: ${poemBoothResponse.status}`);
         }
-      };
+        const poemBoothRecord = await poemBoothResponse.json();
+        console.log('Poem Booth record:', poemBoothRecord);
+        
+        const eventPartnerResponse = await fetch('/api/products/eventpartner');
+        if (!eventPartnerResponse.ok) {
+          throw new Error(`Failed to fetch event partner: ${eventPartnerResponse.status}`);
+        }
+        const eventPartnerRecord = await eventPartnerResponse.json();
+        console.log('Event Partner record:', eventPartnerRecord);
+        
+        const eventSpecialistResponse = await fetch('/api/products/eventspecialist');
+        if (!eventSpecialistResponse.ok) {
+          throw new Error(`Failed to fetch event specialist: ${eventSpecialistResponse.status}`);
+        }
+        const eventSpecialistRecord = await eventSpecialistResponse.json();
+        console.log('Event Specialist record:', eventSpecialistRecord);
+        
+        const brandingResponse = await fetch('/api/products/branding');
+        if (!brandingResponse.ok) {
+          throw new Error(`Failed to fetch branding: ${brandingResponse.status}`);
+        }
+        const brandingRecord = await brandingResponse.json();
+        console.log('Branding record:', brandingRecord);
+        
+        const themeResponse = await fetch('/api/products/theme');
+        if (!themeResponse.ok) {
+          throw new Error(`Failed to fetch theme: ${themeResponse.status}`);
+        }
+        const themeRecord = await themeResponse.json();
+        console.log('Theme record:', themeRecord);
+        
+        const standardPrinterResponse = await fetch('/api/products/printer-1');
+        if (!standardPrinterResponse.ok) {
+          throw new Error(`Failed to fetch printer: ${standardPrinterResponse.status}`);
+        }
+        const standardPrinterRecord = await standardPrinterResponse.json();
+        console.log('Printer record:', standardPrinterRecord);
+        
+        const roastResponse = await fetch('/api/products/roast');
+        if (!roastResponse.ok) {
+          throw new Error(`Failed to fetch roast: ${roastResponse.status}`);
+        }
+        const roastRecord = await roastResponse.json();
+        console.log('Roast record:', roastRecord);
+        
+        const transportResponse = await fetch('/api/products/transport');
+        if (!transportResponse.ok) {
+          throw new Error(`Failed to fetch transport: ${transportResponse.status}`);
+        }
+        const transportRecord = await transportResponse.json();
+        console.log('Transport record:', transportRecord);
+        
+        const languageResponse = await fetch('/api/products/extra-language');
+        if (!languageResponse.ok) {
+          throw new Error(`Failed to fetch language: ${languageResponse.status}`);
+        }
+        const languageRecord = await languageResponse.json();
+        console.log('Language record:', languageRecord);
+
+        const keynoteResponse = await fetch('/api/products/keynote');
+        if (!keynoteResponse.ok) {
+          throw new Error(`Failed to fetch keynote: ${keynoteResponse.status}`);
+        }
+        const keynoteRecord = await keynoteResponse.json();
+        console.log('Keynote record:', keynoteRecord);
+
+        // Store the record IDs
+        productIds = {
+          poemBooth: poemBoothRecord?.id,
+          eventPartner: eventPartnerRecord?.id,
+          eventSpecialist: eventSpecialistRecord?.id,
+          extraLanguage: languageRecord?.id,
+          branding: brandingRecord?.id,
+          theme: themeRecord?.id,
+          printer: standardPrinterRecord?.id,
+          roast: roastRecord?.id,
+          transport: transportRecord?.id,
+          keynote: keynoteRecord?.id
+        };
+
+        console.log('Final Product IDs:', productIds);
+
+        // Validate that we have all required product IDs
+        const missingProducts = Object.entries(productIds)
+          .filter(([key, value]) => !value)
+          .map(([key]) => key);
+
+        if (missingProducts.length > 0) {
+          console.error('Missing product IDs for:', missingProducts);
+          throw new Error(`Missing product IDs for: ${missingProducts.join(', ')}`);
+        }
+
+        // Set initial values
+        const initialDate = new Date();
+        initialDate.setDate(initialDate.getDate() + 7); // One week from now
+        
+        startDate = initialDate.toISOString().split('T')[0];
+        endDate = startDate;
+        startTime = "09:00";
+        endTime = "17:00";
+        
+        // Calculate initial price
+        totalPrice = 950; // Set default price for one day
+
+        return () => {
+          // Cleanup
+          if (geocoder) {
+            geocoder.destroy();
+          }
+        };
+      } catch (error) {
+        console.error('Error during initialization:', error);
+        throw error;
+      }
     } catch (error) {
       console.error('Error during initialization:', error);
       throw error;

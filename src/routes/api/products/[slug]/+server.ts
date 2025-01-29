@@ -52,17 +52,28 @@ const products = {
     'keynote': {
         id: 'keynote',
         name: 'Keynote',
-        price: 1000
+        price: 500
     }
 };
 
 export const GET: RequestHandler = async ({ params }) => {
-    const { slug } = params;
-    const product = products[slug];
+    try {
+        const { slug } = params;
+        const product = products[slug];
 
-    if (!product) {
-        return json({ error: 'Product not found' }, { status: 404 });
+        if (!product) {
+            return json(
+                { error: `Product not found: ${slug}` },
+                { status: 404 }
+            );
+        }
+
+        return json(product);
+    } catch (error) {
+        console.error('Error in products API:', error);
+        return json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
-
-    return json(product);
 };
