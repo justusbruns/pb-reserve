@@ -5,9 +5,7 @@ import preprocess from 'svelte-preprocess';
 const config = {
   kit: {
     adapter: adapter({
-      runtime: 'nodejs18.x',
-      regions: ['fra1'],
-      edge: false
+      runtime: 'nodejs18.x'
     }),
     env: {
       dir: '.'
