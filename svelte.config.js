@@ -4,7 +4,11 @@ import preprocess from 'svelte-preprocess';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
-    adapter: adapter(),
+    adapter: adapter({
+      runtime: 'nodejs18.x',
+      regions: ['fra1'],
+      edge: false
+    }),
     env: {
       dir: '.'
     },

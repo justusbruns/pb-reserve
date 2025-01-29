@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 // Mock product data - replace with your actual data source
@@ -54,9 +54,9 @@ const products = {
         name: 'Keynote',
         price: 500
     }
-};
+} as const;
 
-export const GET: RequestHandler = async ({ params, url, request }) => {
+export const GET = (async ({ params, url, request }) => {
     console.log('Products API called with:');
     console.log('- URL:', url.toString());
     console.log('- Base URL:', url.origin);
@@ -69,37 +69,28 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
         const { slug } = params;
         console.log('Looking up product with slug:', slug);
         
-        const product = products[slug];
+        if (!slug) {
+            throw error(400, 'Product slug is required');
+        }
+
+        const product = products[slug as keyof typeof products];
         console.log('Found product:', product);
 
         if (!product) {
-            console.log('Product not found for slug:', slug);
-            return json(
-                { error: `Product not found: ${slug}` },
-                { 
-                    status: 404,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            throw error(404, `Product not found: ${slug}`);
         }
 
         return json(product, {
             headers: {
+                'Cache-Control': 'public, max-age=3600',
                 'Content-Type': 'application/json'
             }
         });
-    } catch (error) {
-        console.error('Error in products API:', error);
-        return json(
-            { error: 'Internal server error' },
-            { 
-                status: 500,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+    } catch (e) {
+        console.error('Error in products API:', e);
+        if (e instanceof Error) {
+            throw error(500, e.message);
+        }
+        throw error(500, 'Internal server error');
     }
-};
+}) satisfies RequestHandler;
