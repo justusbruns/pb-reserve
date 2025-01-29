@@ -1,6 +1,7 @@
 import adapter from '@sveltejs/adapter-vercel';
-import preprocess from "svelte-preprocess";
+import preprocess from 'svelte-preprocess';
 
+/** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
     adapter: adapter(),
@@ -11,7 +12,12 @@ const config = {
       '$lib': './src/lib'
     }
   },
-  preprocess: preprocess({})
+  preprocess: preprocess({
+    typescript: {
+      tsconfigFile: './tsconfig.json'
+    },
+    sourceMap: true
+  })
 };
 
 export default config;

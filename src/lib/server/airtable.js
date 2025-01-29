@@ -176,38 +176,35 @@ export const base = {
     ProductGroups: new Table('ProductGroups'),
     Availability: new Table('Availability'),
     Configuration: new Table('Configuration'),
-
-    formatRecord(record) {
-        if (!record) return null;
-        return {
-            id: record.id,
-            ...record.fields
-        };
-    },
-
-    formatRecords(records) {
-        return records.map(this.formatRecord);
-    },
-
-    handleAirtableError(error) {
-        console.error('Airtable error:', error);
-        
-        if (error.error?.type === 'AUTHENTICATION_REQUIRED') {
-            throw new Error('Invalid Airtable authentication token');
-        }
-        
-        if (error.error?.type === 'NOT_FOUND') {
-            throw new Error('Record or table not found');
-        }
-        
-        if (error.error?.type === 'INVALID_PERMISSIONS') {
-            throw new Error('Insufficient permissions to perform this operation');
-        }
-        
-        if (error.error?.type === 'RATE_LIMIT_EXCEEDED') {
-            throw new Error('Airtable rate limit exceeded. Please try again later.');
-        }
-        
-        throw new Error(error.error?.message || 'An error occurred while communicating with Airtable');
-    }
 };
+
+// Helper functions
+export function formatRecord(record) {
+    if (!record) return null;
+    return {
+        id: record.id,
+        ...record.fields
+    };
+}
+
+export function formatRecords(records) {
+    return records.map(formatRecord);
+}
+
+export function handleAirtableError(error) {
+    console.error('Airtable error:', error);
+    
+    if (error.error === 'NOT_FOUND') {
+        return json({ error: 'Record not found' }, { status: 404 });
+    }
+    
+    if (error.error === 'INVALID_PERMISSIONS') {
+        return json({ error: 'Invalid permissions' }, { status: 403 });
+    }
+    
+    if (error.error === 'AUTHENTICATION_REQUIRED') {
+        return json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
+    return json({ error: 'Internal server error' }, { status: 500 });
+}
