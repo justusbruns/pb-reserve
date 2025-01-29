@@ -4,9 +4,7 @@ import preprocess from 'svelte-preprocess';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
-    adapter: adapter({
-      runtime: 'nodejs18.x'
-    }),
+    adapter: adapter(),
     env: {
       dir: '.'
     },
@@ -14,12 +12,7 @@ const config = {
       '$lib': './src/lib'
     }
   },
-  preprocess: preprocess({
-    typescript: {
-      tsconfigFile: './tsconfig.json'
-    },
-    sourceMap: true
-  })
+  preprocess: preprocess()
 };
 
 export default config;
