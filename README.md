@@ -43,6 +43,24 @@ npm install
 npm run dev
 ```
 
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in the required values:
+
+```bash
+# Airtable Configuration
+AIRTABLE_PAT=           # Your Airtable Personal Access Token
+AIRTABLE_BASE_ID=       # The Poem Booth Airtable Base ID
+
+# Mapbox Configuration
+MAPBOX_TOKEN=           # Your Mapbox API Token for geocoding
+
+# API Configuration
+API_TOKEN=              # API Token for authentication
+```
+
+These environment variables must be set in your local development environment and in your Vercel project settings when deploying.
+
 ## Project Structure
 
 - `/src`
