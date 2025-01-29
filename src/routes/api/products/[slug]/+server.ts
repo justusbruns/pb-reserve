@@ -56,12 +56,19 @@ const products = {
     }
 };
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, url }) => {
+    console.log('Products API called with params:', params);
+    console.log('Available products:', Object.keys(products));
+    
     try {
         const { slug } = params;
+        console.log('Looking up product with slug:', slug);
+        
         const product = products[slug];
+        console.log('Found product:', product);
 
         if (!product) {
+            console.log('Product not found for slug:', slug);
             return json(
                 { error: `Product not found: ${slug}` },
                 { status: 404 }
