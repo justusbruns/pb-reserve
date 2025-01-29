@@ -1,23 +1,26 @@
 {
   "name": "vite-svelte-starter",
   "version": "0.1.0",
-  "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf node_modules .vite dist .svelte-kit"
+  },
   "devDependencies": {
     "@playwright/test": "^1.40.1",
-    "@sveltejs/kit": "^1.20.4",
+    "@sveltejs/adapter-vercel": "^3.0.3",
+    "@sveltejs/kit": "^1.27.6",
+    "@sveltejs/vite-plugin-svelte": "^2.5.3",
     "@tsconfig/svelte": "^5.0.2",
-    "playwright": "^1.40.1",
     "sass": "^1.69.7",
-    "svelte": "^4.0.5",
+    "svelte": "^4.2.7",
     "typescript": "^5.3.3",
-    "vite": "^4.4.2",
-    "vite-tsconfig-paths": "^4.2.3"
+    "vite": "^4.5.1"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-geocoder": "^5.0.1",
-    "@sveltejs/adapter-vercel": "^3.0.3",
-    "@sveltejs/vite-plugin-svelte": "^2.4.2",
     "@vercel/node": "^3.0.14",
     "airtable": "^0.12.2",
     "canvas-confetti": "^1.9.2",
@@ -26,13 +29,12 @@
     "flowbite-svelte": "^0.44.20",
     "ical-generator": "^6.0.1",
     "mapbox-gl": "^3.0.1",
-    "svelte-preprocess": "^5.0.4"
+    "svelte-preprocess": "^5.0.4",
+    "vite-tsconfig-paths": "^4.2.3"
   },
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf node_modules .vite dist .svelte-kit"
+  "overrides": {
+    "cookie": "^0.7.0",
+    "path-to-regexp": "^6.2.3"
   },
   "engines": {
     "node": "18.x"
