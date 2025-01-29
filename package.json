@@ -29,7 +29,8 @@
     "flatpickr": "^4.6.13",
     "flowbite-svelte": "^0.44.20",
     "ical-generator": "^6.0.1",
-    "mapbox-gl": "^3.0.1"
+    "mapbox-gl": "^3.0.1",
+    "svelte": "^4.2.7"
   },
   "overrides": {
     "cookie": "^0.7.0",
