@@ -11,13 +11,14 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.1",
-    "@sveltejs/adapter-vercel": "^3.0.0",
-    "@sveltejs/kit": "^1.27.6",
+    "@sveltejs/adapter-vercel": "^4.0.0",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6",
     "@tsconfig/svelte": "^5.0.2",
     "sass": "^1.69.7",
     "svelte-preprocess": "^5.0.4",
     "typescript": "^5.3.3",
-    "vite": "^4.5.1",
+    "vite": "^5.0.0",
     "vite-tsconfig-paths": "^4.2.3"
   },
   "dependencies": {
@@ -27,10 +28,9 @@
     "canvas-confetti": "^1.9.2",
     "dotenv": "^16.3.1",
     "flatpickr": "^4.6.13",
-    "flowbite-svelte": "^0.44.20",
     "ical-generator": "^6.0.1",
     "mapbox-gl": "^3.0.1",
-    "svelte": "^4.2.7"
+    "svelte": "^5.0.0"
   },
   "overrides": {
     "cookie": "^0.7.0",
@@ -40,7 +40,8 @@
     "inflight": "npm:lru-cache@^10.1.0",
     "npmlog": "^6.0.2",
     "gauge": "^4.0.4",
-    "are-we-there-yet": "^3.0.1"
+    "are-we-there-yet": "^3.0.1",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6"
   },
   "engines": {
     "node": "18.x"
