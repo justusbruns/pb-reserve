@@ -16,7 +16,7 @@ test('test1', async () => {
 
   try {
     // Navigate to the form page with a longer timeout
-    await page.goto('http://localhost:5173/', { 
+    await page.goto('http://localhost:4174/', { 
       waitUntil: 'networkidle',
       timeout: 30000 
     });
@@ -60,22 +60,26 @@ test('test1', async () => {
     await page.fill('#email', 'test@testcompany.nl');
     await page.fill('#contact_phone', '+31 20 555 0000');
     await page.fill('#account_name', 'Test Company BV');
-    await page.fill('#address', 'Teststraat 123');
-    await page.fill('#postal_code', '1234 AB');
+    
+    // Fill company address fields directly
+    await page.fill('#address', 'Gedempt Hamerkanaal 111');
+    await page.fill('#postal_code', '1021KP');
     await page.fill('#city', 'Amsterdam');
     await page.selectOption('#country', 'Netherlands');
-  
+    
     // Wait for VAT field to appear after country selection
-    await page.waitForTimeout(1000); // Give time for the field to appear
+    await page.waitForTimeout(1000);
     await page.waitForSelector('#vat_number', { state: 'visible' });
     await page.fill('#vat_number', 'NL123456789B01');
     console.log('Filled company details');
 
     // Delivery address
-    await page.waitForSelector('#delivery_business_name');
+    await page.waitForSelector('#delivery_business_name', { timeout: 60000, state: 'visible' });
     await page.fill('#delivery_business_name', 'Delivery Location');
-    await page.fill('#delivery_street', 'Deliverystraat 456');
-    await page.fill('#delivery_postal_code', '5678 CD');
+    
+    // Fill delivery address fields directly
+    await page.fill('#delivery_street', 'Coolsingel 42');
+    await page.fill('#delivery_postal_code', '3011AD');
     await page.fill('#delivery_city', 'Rotterdam');
     await page.selectOption('#delivery_country', 'Netherlands');
     console.log('Filled delivery address');

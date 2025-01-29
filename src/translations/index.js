@@ -471,7 +471,7 @@ export default {
       deliveryCityPlaceholder: "Voer de aflever plaats in",
       deliveryCountry: "Aflever land",
       deliveryBusinessName: "Afleverlocatie naam",
-      deliveryBusinessNamePlaceholder: "Voer de naam van de afleverlocatie in",
+      deliveryBusinessNamePlaceholder: "Afleverlocatie naam",
       dimensions: {
         text: "Ik begrijp dat de Poem Booth door zijn omvang en gewicht niet via een trap kan worden vervoerd. Plaatsing op een verdieping is alleen mogelijk als er een ruime lift beschikbaar is. Daarnaast begrijp ik dat de lift minimaal 240 cm hoog, 220 cm diep en 90 cm breed moet zijn, en doorgangen minimaal 230 cm hoog en 80 cm breed."
       },
@@ -1023,7 +1023,7 @@ export default {
       deliveryCityPlaceholder: "Enter the delivery city",
       deliveryCountry: "Delivery country",
       deliveryBusinessName: "Delivery location name",
-      deliveryBusinessNamePlaceholder: "Enter the delivery location name",
+      deliveryBusinessNamePlaceholder: "Delivery location name",
       dimensions: {
         text: "I understand that due to its size and weight, the Poem Booth cannot be transported via stairs. Installation on upper floors is only possible if a spacious elevator is available. Additionally, I understand that the elevator must be at least 240 cm high, 220 cm deep, and 90 cm wide, and passageways must be at least 230 cm high and 80 cm wide."
       },

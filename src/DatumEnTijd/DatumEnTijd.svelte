@@ -14,10 +14,6 @@
   import type { EventFields } from 'types/Event';
   import { writable } from 'svelte/store';
   import { dateTimeUtils } from '../services/airtable/utils';
-  import { countryUtils } from '../services/airtable/utils';
-  import flatpickr from 'flatpickr';
-  import { Dutch } from 'flatpickr/dist/l10n/nl.js';
-  import 'flatpickr/dist/flatpickr.css';
   import confetti from 'canvas-confetti';
   import type { Translations } from './types';
   import { geocodeAddress, reverseGeocode } from '$lib/client/apiClient';
@@ -720,9 +716,9 @@
   }
 
   $: {
-    if (startDate && endDate && startTime && endTime) {
-      const start = new Date(`${startDate}T${startTime}`);
-      const end = new Date(`${endDate}T${endTime}`);
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
       const days = calculateEventDays(startDate, endDate);
       totalPrice = calculateRentalPrice(days);
     }
@@ -1311,10 +1307,9 @@
   let calculatedDistance = 0;
   let transportFee = 0;
 
-  // Function to update route visualization
   async function updateRouteVisualization() {
     try {
-      if (!originCoordinates?.length || originCoordinates.length === 0) {
+      if (!originCoordinates?.length || !destinationCoordinates?.length) {
         console.warn('Missing coordinates for route visualization:', { originCoordinates, destinationCoordinates });
         return;
       }
@@ -1326,6 +1321,11 @@
         `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoordinates[0]},${originCoordinates[1]};${destinationCoordinates[0]},${destinationCoordinates[1]}?geometries=geojson&access_token=${mapboxToken}`
       );
       
+      if (!response.ok) {
+        console.error('Error fetching route:', response.statusText);
+        return;
+      }
+
       const routeData = await response.json();
       console.log('Route data:', routeData);
 
@@ -1343,22 +1343,56 @@
         const minLat = Math.min(...lats);
         const maxLat = Math.max(...lats);
         
-        // Add 20% padding
-        const lngPadding = (maxLng - minLng) * 0.2;
-        const latPadding = (maxLat - minLat) * 0.2;
+        // Add padding to the bounds
+        const padding = 0.2; // 20% padding
         const bbox = [
-          minLng - lngPadding,
-          minLat - latPadding,
-          maxLng + lngPadding,
-          maxLat + latPadding
-        ];
+          minLng - (maxLng - minLng) * padding,
+          minLat - (maxLat - minLat) * padding,
+          maxLng + (maxLng - minLng) * padding,
+          maxLat + (maxLat - minLat) * padding
+        ].join(',');
+        
+        // Create GeoJSON for the route and markers
+        const geoJson = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: {
+                "stroke": "#326334",
+                "stroke-width": 5
+              },
+              geometry: geojson
+            },
+            {
+              type: "Feature",
+              properties: {
+                "marker-color": "#326334",
+                "marker-size": "large"
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [originCoordinates[0], originCoordinates[1]]
+              }
+            },
+            {
+              type: "Feature",
+              properties: {
+                "marker-color": "#326334",
+                "marker-size": "large"
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [destinationCoordinates[0], destinationCoordinates[1]]
+              }
+            }
+          ]
+        };
 
-        // Update static map with route visualization
+        // Update static map URL
         const params = new URLSearchParams();
-        params.set('origin', `${originCoordinates[0]},${originCoordinates[1]}`);
-        params.set('destination', `${destinationCoordinates[0]},${destinationCoordinates[1]}`);
-        params.set('bbox', bbox.join(','));
-        params.set('geojson', JSON.stringify(geojson));
+        params.set('bbox', bbox);
+        params.set('geojson', JSON.stringify(geoJson));
 
         staticMapUrl = `/api/staticmap?${params.toString()}`;
         isMapLoading = true;
@@ -1502,97 +1536,64 @@
     phoneError = isValid ? '' : getTranslation('errors.invalidPhone') || 'Invalid phone number';
     return isValid;
   }
+
+  const countryCodeMap = {
+    'NL': 'Netherlands',
+    'BE': 'Belgium',
+    'DE': 'Germany',
+    'GB': 'United Kingdom',
+    'FR': 'France',
+    'CH': 'Switzerland',
+    'AT': 'Austria',
+    'NO': 'Norway'
+  };
 </script>
 
 <style>
-  /* Scoped styles for the geocoder container */
+  /* Only keep essential global styles */
   :global(#geocoder) {
     width: 100%;
-    max-width: 100%;
+    margin-bottom: 1rem;
   }
 
-  :global(#geocoder .mapboxgl-ctrl-geocoder) {
-    width: 100%;
-    max-width: 100%;
-    box-shadow: none;
-    font-family: "Inter", sans-serif;
-    border: none;
-    background: #326334;
-    border-radius: 7px;
-    min-height: 50px;
-    margin: 0;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--input) {
-    height: 50px;
-    border: none;
-    background: #326334;
-    color: #C9DA9A;
-    padding: 12px 16px;
-    font-family: "Inter", sans-serif;
-    font-size: 16px;
-    min-height: 50px;
-    width: 100%;
-    margin: 0;
-    border-radius: 7px;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--input::placeholder) {
-    color: #C9DA9A;
-    opacity: 1;
-    font-family: "Inter", sans-serif;
-    font-size: 16px;
-    font-weight: normal;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--icon),
-  :global(#geocoder .mapboxgl-ctrl-geocoder--button) {
-    display: none;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestions) {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #326334;
-    border: 2px solid #C9DA9A;
-    border-top: none;
-    border-radius: 0 0 7px 7px;
-    margin-top: -2px;
-    color: #C9DA9A;
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 0;
-    margin: 0;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestion) {
-    color: #C9DA9A;
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(201, 218, 154, 0.2);
-    font-family: "Inter", sans-serif;
-    font-size: 16px;
-    line-height: 1.4;
-    background: #326334;
-    margin: 0;
-  }
-
-  :global(#geocoder .mapboxgl-ctrl-geocoder--suggestion *) {
-    background: #326334;
-    margin: 0;
-  }
-
-  :global(.text) {
+  .text {
     width: 100% !important;
     max-width: 100% !important;
-    box-sizing: border-box !important;
   }
 
   .input-container {
     width: 100%;
     max-width: 100%;
+  }
+
+  .map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+  }
+
+  .map-image.visible {
+    opacity: 1 !important;
+  }
+
+  .error-message {
+    background-color: #fff3f3;
+    border: 1px solid #326334;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: #326334;
+  }
+
+  .error-message ul {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+  }
+
+  .error-message li {
+    margin: 0.25rem 0;
   }
 
   .keynote-remark {
@@ -1682,7 +1683,8 @@
     justify-content: center;
     align-items: center;
     background-color: #C9DA9A;
-    transition: opacity 0.3s ease-out;
+    opacity: 1;
+    transition: opacity 0.3s ease;
   }
 
   .loading-container.hidden {
@@ -1691,7 +1693,7 @@
   }
 
   .loading-van {
-    animation: bounce 1s infinite ease-in-out;
+    animation: bounce 1s infinite;
   }
 
   @keyframes bounce {
@@ -1701,35 +1703,6 @@
     50% {
       transform: translateY(-10px);
     }
-  }
-
-  .map-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity 0.5s ease-in;
-  }
-
-  .map-image.visible {
-    opacity: 1 !important;
-  }
-
-  .error-message {
-    background-color: #fff3f3;
-    border: 1px solid #326334;
-    border-radius: 4px;
-    padding: 1rem;
-    margin: 1rem 0;
-    color: #326334;
-  }
-
-  .error-message ul {
-    margin: 0.5rem 0 0 1.5rem;
-    padding: 0;
-  }
-
-  .error-message li {
-    margin: 0.25rem 0;
   }
 </style>
 
@@ -1802,7 +1775,14 @@
             class:visible={mapImageLoaded}
             src={staticMapUrl} 
             alt="Route map"
-            on:load={() => mapImageLoaded = true}
+            on:load={() => {
+              mapImageLoaded = true;
+              isMapLoading = false;
+            }}
+            on:error={() => {
+              console.error('Error loading map image');
+              isMapLoading = false;
+            }}
           />
         {/if}
       </div>
@@ -1813,13 +1793,46 @@
         </div>
         <div class="input-container">
           <MapboxGeocoder 
-            accessToken={mapboxToken} 
             types="address" 
             countries={['NL', 'BE', 'DE']} 
             language={currentLang} 
             placeholder={getTranslation('transport.deliveryAddressPlaceholder')} 
-            on:result={handleGeocderResult} 
-            on:clear={handleGeocderClear}
+            on:result={(event) => {
+              const { result } = event.detail;
+              if (!result) return;
+              
+              showAddressFields = true;
+              
+              // Extract street address from place name
+              deliveryStreet = result.street;
+              
+              // Extract postal code, city and country
+              deliveryPostalCode = result.postalCode;
+              deliveryCity = result.city;
+              
+              if (result.country) {
+                const countryCode = result.country;
+                if (countryCode && countryCodeMap[countryCode]) {
+                  deliveryCountry = countryCodeMap[countryCode];
+                }
+              }
+              
+              // Update coordinates for distance calculation
+              if (result.coordinates && result.coordinates.length === 2) {
+                destinationCoordinates = result.coordinates;
+                updateRouteVisualization();
+                calculateDistance(result.coordinates);
+              }
+            }} 
+            on:clear={() => {
+              showAddressFields = false;
+              deliveryStreet = '';
+              deliveryPostalCode = '';
+              deliveryCity = '';
+              deliveryCountry = '';
+              destinationCoordinates = [];
+              updateRouteVisualization();
+            }}
           />
           {#if showAddressFields}
             <div class="address-fields" transition:fade>
@@ -2311,7 +2324,7 @@
             <div class="vanaf required-field">{getTranslation('form.address')}:</div>
           </div>
           <div class="frame">
-            <div style="margin-top: 10px;">
+            <div>
               <input 
                 type="text" 
                 class="text" 
@@ -2320,7 +2333,7 @@
                 bind:value={address}
                 required
                 placeholder={getTranslation('form.addressPlaceholder')}
-              />
+              >
               <div style="margin-top: 10px;">
                 <div style="display: flex; gap: 20px;">
                   <div style="flex: 1;">
@@ -2332,7 +2345,7 @@
                       bind:value={postalCode}
                       required
                       placeholder={getTranslation('form.postalCodePlaceholder')}
-                    >
+                    />
                   </div>
                   <div style="flex: 2;">
                     <input 
