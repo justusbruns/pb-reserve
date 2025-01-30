@@ -9,7 +9,8 @@ const config = {
       dir: '.'
     },
     alias: {
-      '$lib': './src/lib'
+      '$lib': './src/lib',
+      'types': './src/types'
     }
   },
   preprocess: preprocess()
