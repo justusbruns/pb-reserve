@@ -14,10 +14,17 @@ function checkAirtableConfig() {
 // Initialize Airtable base on the server side
 function initializeAirtableBase() {
     checkAirtableConfig();
-    return new Airtable({
+    const airtable = new Airtable({
         apiKey: env.AIRTABLE_PAT,
         endpointUrl: 'https://api.airtable.com'
-    }).base(env.AIRTABLE_BASE_ID);
+    });
+    const base = airtable.base(env.AIRTABLE_BASE_ID);
+    return {
+        Events: base('Events'),
+        Organizations: base('Organizations'),
+        Persons: base('Persons'),
+        Reservations: base('Reservations')
+    };
 }
 
 // Helper function to format a single Airtable record
